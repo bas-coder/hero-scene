@@ -1,0 +1,384 @@
+/* Responsive collection: Desktop (base), Tablet, Mobile. */
+:root {
+  /* Responsive / breakpoints. Named media queries resolve these aliases at build time. */
+  --breakpoint-desktop: var(--scale-1440);
+  --breakpoint-tablet: var(--scale-980);
+  --breakpoint-mobile: var(--scale-700);
+
+  /* Responsive / layout: desktop */
+  --layout-margin: var(--scale-40);
+  --layout-columns: var(--scale-count-12);
+  --layout-gutter: var(--scale-24);
+  --layout-content: var(--scale-1600);
+  --layout-row: var(--scale-8);
+  --layout-height: 100svh;
+
+  /* Responsive / spacing */
+  --space-3xs: var(--scale-2);
+  --space-2xs: var(--scale-4);
+  --space-xs: var(--scale-8);
+  --space-sm: var(--scale-12);
+  --space-md: var(--scale-16);
+  --space-lg: var(--scale-24);
+  --space-xl: var(--scale-32);
+  --space-2xl: var(--scale-48);
+  --space-3xl: var(--scale-64);
+  --space-hero-gap: clamp(var(--scale-24), 4vw, calc(var(--scale-64) + var(--scale-8)));
+  --space-header-y: var(--scale-16);
+  --space-copy-top: calc(var(--scale-20) + var(--scale-2));
+  --space-hero-footer-gap: var(--scale-64);
+  --space-hero-bottom: var(--scale-40);
+
+  /* Responsive / radius */
+  --radius-hairline: calc(var(--scale-2) / 2);
+  --radius-xs: calc(var(--scale-4) - var(--scale-2) / 2);
+  --radius-sm: var(--scale-4);
+  --radius-md: var(--scale-12);
+  --radius-pill: calc(var(--scale-1000) - var(--scale-1));
+
+  /* Responsive / border */
+  --border-hairline: calc(var(--scale-2) / 2);
+  --border-strong: var(--scale-2);
+
+  /* Responsive / text sizes: desktop */
+  --text-xxs-size: calc(var(--scale-8) + var(--scale-2));
+  --text-xs-size: calc(var(--scale-8) + var(--scale-2) + var(--scale-2) / 2);
+  --text-sm-size: calc(var(--scale-12) + var(--scale-2) / 2);
+  --text-base-size: calc(var(--scale-16) - var(--scale-2));
+  --text-md-size: calc(var(--scale-16) - var(--scale-2) / 2);
+  --text-lg-size: clamp(var(--text-md-size), 1.2vw, calc(var(--scale-16) + var(--scale-2)));
+  --text-xl-size: calc(var(--scale-20) + var(--scale-2));
+  --text-2xl-size: clamp(calc(var(--scale-16) + var(--scale-2)), 1.55vw, calc(var(--scale-24) + var(--scale-2)));
+  --text-3xl-size: calc(var(--scale-40) - var(--scale-2));
+  --text-4xl-size: clamp(calc(var(--scale-32) + var(--scale-2)), 4vw, calc(var(--scale-64) + var(--scale-4)));
+  --text-5xl-size: clamp(calc(var(--scale-40) + var(--scale-2)), 4vw, calc(var(--scale-64) + var(--scale-4) + var(--scale-2)));
+  --text-6xl-size: clamp(var(--scale-48), 5vw, calc(var(--scale-80) + var(--scale-2)));
+  --text-7xl-size: clamp(calc(var(--scale-48) - var(--scale-2)), 6vw, calc(var(--scale-96) - var(--scale-2)));
+  --text-8xl-size: clamp(calc(var(--scale-56) + var(--scale-2)), 8vw, var(--scale-128));
+  --text-hero-size: clamp(var(--scale-48), 5vw, var(--scale-64));
+  --text-display-size: clamp(calc(var(--scale-80) - var(--scale-4) - var(--scale-2)), 9.3vw, calc(var(--scale-128) + var(--scale-32) - var(--scale-2)));
+  --text-wide-size: clamp(calc(var(--scale-56) + var(--scale-2)), 7vw, calc(var(--scale-128) - var(--scale-8) - var(--scale-2)));
+  --text-section-size: clamp(calc(var(--scale-56) + var(--scale-2)), 5.7vw, var(--scale-96));
+  --text-faq-size: clamp(calc(var(--scale-24) + var(--scale-2) / 2), 2.5vw, calc(var(--scale-40) + var(--scale-2)));
+  --text-closing-size: clamp(calc(var(--scale-64) + var(--scale-8)), 10.5vw, calc(var(--scale-128) + var(--scale-48)));
+  --text-menu-size: clamp(calc(var(--scale-56) + var(--scale-2)), 17vw, calc(var(--scale-96) - var(--scale-4)));
+  --text-eyebrow-size: var(--text-xs-size);
+  --text-availability-size: var(--text-sm-size);
+  --text-meta-size: var(--text-caption-size);
+  --text-note-size: var(--text-xxs-size);
+  --text-caption-size: var(--scale-12);
+  --text-9xl-line: 0.96;
+  --control-height: var(--scale-40);
+  --control-height-sm: calc(var(--scale-32) + var(--scale-4));
+  --control-icon: var(--scale-20);
+  --badge-size: var(--scale-12);
+  --current-dot-size: var(--scale-8);
+  --badge-radius: calc(var(--scale-4) - var(--scale-2) / 4);
+  --badge-height: var(--scale-28);
+
+  /* Responsive / header and hero HUD controls, sized to the Bricx reference. */
+  --header-pill-height: var(--scale-30);
+  --header-control-size: var(--scale-32);
+  --header-icon-size: var(--scale-16);
+  --header-logo-height: var(--scale-20);
+  --hero-action-height: var(--scale-44);
+  --hero-copy-shade-bleed: var(--scale-40);
+  --hero-copy-shade-blur: var(--scale-48);
+
+  /* Responsive / client logo grid and its tooltip (Bricx reference). */
+  --space-logo-section-y: var(--scale-56);
+  --logo-grid-gap: var(--scale-12);
+  --logo-tile-pad: var(--scale-24);
+  --logo-height: var(--scale-28);
+  --logo-max-width: calc(var(--scale-96) + var(--scale-20));
+  --tooltip-rich-max-width: var(--scale-340);
+  --tooltip-pad: var(--scale-12);
+  --tooltip-section-gap: var(--scale-10);
+  --investor-chip-pad: var(--scale-4) var(--scale-10) var(--scale-4) var(--scale-4);
+  --investor-chip-gap: var(--scale-6);
+  --investor-icon-size: var(--scale-20);
+  --investor-icon-inset: var(--scale-4);
+  --logo-tap-hint: var(--scale-6);
+  --radius-tile: var(--scale-10);
+  --tooltip-max-width: var(--scale-240);
+  --tooltip-pad-y: var(--scale-6);
+  --tooltip-pad-x: var(--scale-12);
+  --tooltip-offset: var(--scale-12);
+  --tooltip-arrow: var(--scale-8);
+  --tooltip-rise: var(--scale-8);
+  --tooltip-edge: var(--scale-12);
+
+  /* Responsive / statement section: avecanni.studio's about layout at cr8ivelarry.live's 48px statement. */
+  --text-statement-size: var(--scale-48);
+  --text-signature-size: var(--scale-16);
+  /* Container units: "action studios" is 5.1em wide at the wordmark tracking, so 19.4cqi spans its column. */
+  --text-wordmark-size: 19.4cqi;
+  --statement-pad-y: var(--scale-80);
+  --statement-gap: var(--scale-64);
+  --statement-headline-width: var(--scale-1000);
+  --statement-aside-width: calc(var(--scale-340) + var(--scale-24));
+  --statement-portrait-width: var(--scale-80);
+  --statement-portrait-height: var(--scale-100);
+  --statement-torch-radius: var(--scale-180);
+
+  /* Responsive / transparency */
+  --alpha-3: calc(var(--scale-ratio-3) * 100%);
+  --alpha-8: calc(var(--scale-ratio-8) * 100%);
+  --alpha-9: calc(var(--scale-ratio-9) * 100%);
+  --alpha-10: calc(var(--scale-ratio-10) * 100%);
+  --alpha-12: calc(var(--scale-ratio-12) * 100%);
+  --alpha-14: calc(var(--scale-ratio-14) * 100%);
+  --alpha-16: calc(var(--scale-ratio-16) * 100%);
+  --alpha-18: calc(var(--scale-ratio-18) * 100%);
+  --alpha-22: calc(var(--scale-ratio-22) * 100%);
+  --alpha-24: calc(var(--scale-ratio-24) * 100%);
+  --alpha-25: calc(var(--scale-ratio-25) * 100%);
+  --alpha-28: calc(var(--scale-ratio-28) * 100%);
+  --alpha-30: calc(var(--scale-ratio-30) * 100%);
+  --alpha-35: calc(var(--scale-ratio-35) * 100%);
+  --alpha-40: calc(var(--scale-ratio-40) * 100%);
+  --alpha-42: calc(var(--scale-ratio-42) * 100%);
+  --alpha-45: calc(var(--scale-ratio-45) * 100%);
+  --alpha-50: calc(var(--scale-ratio-50) * 100%);
+  --alpha-55: calc(var(--scale-ratio-55) * 100%);
+  --alpha-62: calc(var(--scale-ratio-62) * 100%);
+  --alpha-70: calc(var(--scale-ratio-70) * 100%);
+  --alpha-72: calc(var(--scale-ratio-72) * 100%);
+  --alpha-74: calc(var(--scale-ratio-74) * 100%);
+  --alpha-76: calc(var(--scale-ratio-76) * 100%);
+  --alpha-78: calc(var(--scale-ratio-78) * 100%);
+  --alpha-82: calc(var(--scale-ratio-82) * 100%);
+  --alpha-85: calc(var(--scale-ratio-85) * 100%);
+  --alpha-90: calc(var(--scale-ratio-90) * 100%);
+  --alpha-92: calc(var(--scale-ratio-92) * 100%);
+
+}
+
+@media (--tablet) {
+  :root {
+    --layout-margin: var(--scale-20);
+    --layout-columns: var(--scale-count-8);
+    --layout-gutter: var(--scale-16);
+    --text-hero-size: clamp(var(--scale-40), 5vw, var(--scale-48));
+    --text-display-size: clamp(calc(var(--scale-64) + var(--scale-2)), 13vw, calc(var(--scale-96) + var(--scale-16)));
+  }
+}
+
+@media (--mobile) {
+  :root {
+    --layout-margin: var(--scale-20);
+    --space-hero-footer-gap: var(--scale-56);
+    --logo-tile-pad: var(--scale-16);
+    --logo-height: var(--scale-22);
+    --logo-max-width: calc(var(--scale-80) + var(--scale-8));
+    --layout-columns: var(--scale-count-4);
+    --layout-gutter: var(--scale-12);
+    --text-hero-size: clamp(calc(var(--scale-32) + var(--scale-2)), 8.4vw, calc(var(--scale-48) - var(--scale-2)));
+    --text-9xl-line: 1;
+    --text-eyebrow-size: calc(var(--scale-8) + var(--scale-2) / 2);
+    --text-lg-size: var(--text-base-size);
+    --text-2xl-size: calc(var(--scale-16) + var(--scale-2) / 2);
+    --text-4xl-size: calc(var(--scale-32) + var(--scale-4));
+    --text-5xl-size: var(--scale-40);
+    --text-display-size: clamp(calc(var(--scale-56) + var(--scale-2)), 18vw, calc(var(--scale-96) - var(--scale-4) - var(--scale-2)));
+    --text-wide-size: calc(var(--scale-64) + var(--scale-4) + var(--scale-2));
+    --text-section-size: calc(var(--scale-64) - var(--scale-4));
+    --text-faq-size: calc(var(--scale-24) + var(--scale-2) + var(--scale-2) / 2);
+    --text-closing-size: clamp(calc(var(--scale-64) - var(--scale-2)), 18vw, calc(var(--scale-96) - var(--scale-2)));
+    --text-availability-size: var(--scale-12);
+    --text-meta-size: var(--text-xs-size);
+    --text-note-size: calc(var(--scale-8) + var(--scale-2) / 2);
+    --text-statement-size: var(--scale-24);
+    --statement-pad-y: var(--scale-56);
+    --statement-gap: var(--scale-40);
+    --statement-portrait-width: calc(var(--scale-128) + var(--scale-16));
+    --statement-portrait-height: var(--scale-180);
+    --statement-torch-radius: var(--scale-120);
+  }
+}
+
+/* Shared numeric aliases extracted from the current composition. */
+:root {
+  --layout-size-320: var(--scale-320);
+  --border-2: var(--scale-2);
+  --border-5: calc(var(--scale-4) + var(--scale-1));
+  --space-22: var(--scale-22);
+  --space-8: var(--scale-8);
+  --motion-distance-480: var(--scale-480);
+  --layout-size-92: var(--scale-92);
+  --space-106: var(--scale-106);
+  --space-150: var(--scale-150);
+  --space-26: var(--scale-26);
+  --space-24: var(--scale-24);
+  --space-72: var(--scale-72);
+  --space-28: var(--scale-28);
+  --space-52: var(--scale-52);
+  --layout-size-860: var(--scale-860);
+  --space-17: calc(var(--scale-16) + var(--scale-1));
+  --layout-size-1: calc(var(--scale-0) + var(--scale-1));
+  --space-1: calc(var(--scale-0) + var(--scale-1));
+  --layout-size-340: var(--scale-340);
+  --space-4: var(--scale-4);
+  --space-9: calc(var(--scale-8) + var(--scale-1));
+  --space-3: calc(var(--scale-2) + var(--scale-1));
+  --space-16: var(--scale-16);
+  --motion-distance-42: var(--scale-42);
+  --motion-distance-1: calc(var(--scale-0) + var(--scale-1));
+  --opacity-72: var(--scale-ratio-72);
+  --opacity-60: var(--scale-ratio-60);
+  --opacity-90: var(--scale-ratio-90);
+  --motion-distance-0_5: calc(var(--scale-2) / 4);
+  --motion-distance-2: var(--scale-2);
+  --opacity-50: var(--scale-ratio-50);
+  --space-30: var(--scale-30);
+  --border-1: calc(var(--scale-0) + var(--scale-1));
+  --space-12: var(--scale-12);
+  --space-38: var(--scale-38);
+  --layout-size-4: var(--scale-4);
+  --space-120: var(--scale-120);
+  --space-240: var(--scale-240);
+  --space-110: var(--scale-110);
+  --space-190: var(--scale-190);
+  --space-36: var(--scale-36);
+  --space-70: var(--scale-70);
+  --space-140: var(--scale-140);
+  --space-88: var(--scale-88);
+  --space-160: var(--scale-160);
+  --space-20: var(--scale-20);
+  --layout-size-680: var(--scale-680);
+  --radius-4: var(--scale-4);
+  --opacity-28: var(--scale-ratio-28);
+  --space-40: var(--scale-40);
+  --layout-size-440: var(--scale-440);
+  --space-14: var(--scale-14);
+  --space-62: var(--scale-62);
+  --layout-size-16: var(--scale-16);
+  --layout-size-8: var(--scale-8);
+  --space-10: var(--scale-10);
+  --layout-size-400: var(--scale-400);
+  --space-32: var(--scale-32);
+  --space-50: var(--scale-50);
+  --space-100: var(--scale-100);
+  --space-200: var(--scale-200);
+  --layout-size-390: var(--scale-390);
+  --layout-size-60: var(--scale-60);
+  --space-18: var(--scale-18);
+  --layout-size-260: var(--scale-260);
+  --space-78: var(--scale-78);
+  --layout-size-250: var(--scale-250);
+  --layout-size-70: var(--scale-70);
+  --layout-size-430: var(--scale-430);
+  --space-44: var(--scale-44);
+  --space-130: var(--scale-130);
+  --space-180: var(--scale-180);
+  --layout-size-500: var(--scale-500);
+  --space-34: var(--scale-34);
+  --space-60: var(--scale-60);
+  --layout-size-180: var(--scale-180);
+  --radius-2: var(--scale-2);
+  --motion-distance-3: calc(var(--scale-2) + var(--scale-1));
+  --space-220: var(--scale-220);
+  --space-42: var(--scale-42);
+  --layout-size-84: var(--scale-84);
+  --layout-size-650: var(--scale-650);
+  --space-54: var(--scale-54);
+  --space-90: var(--scale-90);
+  --layout-size-1200: var(--scale-1200);
+  --layout-size-44: var(--scale-44);
+  --space-5: calc(var(--scale-4) + var(--scale-1));
+  --layout-size-42: var(--scale-42);
+  --layout-size-3: calc(var(--scale-2) + var(--scale-1));
+  --space-80: var(--scale-80);
+  --layout-size-46: var(--scale-46);
+  --space-96: var(--scale-96);
+  --space-82: var(--scale-82);
+  --layout-size-32: var(--scale-32);
+  --layout-size-240: var(--scale-240);
+  --layout-size-285: calc(var(--scale-284) + var(--scale-1));
+  --space-11: calc(var(--scale-10) + var(--scale-1));
+  --space-64: var(--scale-64);
+  --layout-size-420: var(--scale-420);
+  --space-66: var(--scale-66);
+  --layout-size-220: var(--scale-220);
+  --layout-size-140: var(--scale-140);
+  --layout-size-78: var(--scale-78);
+  --space-92: var(--scale-92);
+}
+
+:root {
+  --alpha-0: calc(var(--scale-ratio-0) * 100%);
+  --alpha-2: calc(var(--scale-ratio-2) * 100%);
+  --alpha-5: calc(var(--scale-ratio-5) * 100%);
+  --alpha-6: calc(var(--scale-ratio-6) * 100%);
+  --alpha-15: calc(var(--scale-ratio-15) * 100%);
+  --alpha-20: calc(var(--scale-ratio-20) * 100%);
+  --alpha-25: calc(var(--scale-ratio-25) * 100%);
+  --alpha-60: calc(var(--scale-ratio-60) * 100%);
+  --alpha-80: calc(var(--scale-ratio-80) * 100%);
+  --alpha-100: calc(var(--scale-ratio-100) * 100%);
+}
+
+/* Standard large text ladder; editorial hero retains its own measured size. */
+:root {
+  --text-9xl-size: clamp(var(--scale-64), 10vw, calc(var(--scale-128) + var(--scale-32)));
+}
+@media (--tablet) {
+  :root { --text-8xl-size: var(--scale-80); --text-9xl-size: var(--scale-96); }
+}
+@media (--mobile) {
+  :root { --text-6xl-size: var(--scale-48); --text-7xl-size: var(--scale-56); --text-8xl-size: var(--scale-64); --text-9xl-size: var(--scale-80); }
+}
+
+:root {
+  --text-project-size: clamp(var(--scale-48), 5vw, calc(var(--scale-80) + var(--scale-2)));
+  --text-qualia-size: clamp(calc(var(--scale-48) - var(--scale-2)), 6vw, calc(var(--scale-96) - var(--scale-2)));
+  --text-aiwa-size: clamp(calc(var(--scale-56) + var(--scale-2)), 8vw, var(--scale-128));
+}
+
+/* One reference width with three modes, matching the design collections. */
+:root { --breakpoint-width: var(--breakpoint-desktop); --opacity-35: var(--scale-ratio-35); }
+@media (--tablet) { :root { --breakpoint-width: var(--breakpoint-tablet); } }
+@media (--mobile) { :root { --breakpoint-width: var(--breakpoint-mobile); } }
+
+/* Keycap geometry matches the reference in every viewport mode. */
+:root {
+  --keycap-unit-1: calc(var(--scale-0) + var(--scale-1));
+  --keycap-unit-3: calc(var(--scale-2) + var(--scale-1));
+  --keycap-unit-4: var(--scale-4);
+  --keycap-unit-5: calc(var(--scale-4) + var(--scale-1));
+  --keycap-unit-6: var(--scale-6);
+  --keycap-unit-7: calc(var(--scale-6) + var(--scale-1));
+  --keycap-unit-9: calc(var(--scale-8) + var(--scale-1));
+  --keycap-unit-10: var(--scale-10);
+  --keycap-unit-12: var(--scale-12);
+  --keycap-unit-13: calc(var(--scale-12) + var(--scale-1));
+  --keycap-unit-16: var(--scale-16);
+  --keycap-alpha-26: calc(var(--scale-keycap-alpha-26) * 100%);
+  --keycap-alpha-31: calc(var(--scale-keycap-alpha-31) * 100%);
+  --keycap-alpha-38: calc(var(--scale-keycap-alpha-38) * 100%);
+  --keycap-alpha-51: calc(var(--scale-keycap-alpha-51) * 100%);
+  --keycap-alpha-56: calc(var(--scale-keycap-alpha-56) * 100%);
+  --keycap-alpha-64: calc(var(--scale-keycap-alpha-64) * 100%);
+  --keycap-alpha-68: calc(var(--scale-keycap-alpha-68) * 100%);
+  --keycap-alpha-71: calc(var(--scale-keycap-alpha-71) * 100%);
+  --keycap-alpha-128: calc(var(--scale-keycap-alpha-128) * 100%);
+  --keycap-alpha-153: calc(var(--scale-keycap-alpha-153) * 100%);
+  --keycap-alpha-166: calc(var(--scale-keycap-alpha-166) * 100%);
+  --keycap-alpha-191: calc(var(--scale-keycap-alpha-191) * 100%);
+  --keycap-radius: var(--scale-12);
+  --keycap-face-radius: calc(var(--scale-8) + var(--scale-1));
+  --keycap-pad-top: calc(var(--scale-rem) * 0.6);
+  --keycap-pad-x: calc(var(--scale-rem) * 1.15);
+  --keycap-pad-bottom: calc(var(--scale-rem) * 0.75);
+  --keycap-outline-width: calc(var(--scale-1) * 1.5);
+  --keycap-face-inset: var(--keycap-unit-3) var(--keycap-unit-3) var(--keycap-unit-7);
+  --keycap-face-inset-hover: calc(var(--scale-1) * 3.5) calc(var(--scale-1) * 3.5) var(--keycap-unit-6);
+  --keycap-face-inset-press: var(--keycap-unit-4) var(--keycap-unit-4) var(--keycap-unit-5);
+  --keycap-hover-travel: var(--scale-1);
+  --keycap-press-travel: var(--scale-2);
+  --keycap-label-hover-travel: calc(var(--scale-1) / 2);
+  --keycap-label-press-travel: var(--scale-1);
+  --keycap-lip: calc(var(--keycap-unit-7) - var(--keycap-unit-3));
+  --text-control-size: var(--scale-14);
+  --text-control-lg-size: var(--scale-16);
+}

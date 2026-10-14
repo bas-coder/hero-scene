@@ -1,0 +1,134 @@
+/* Case study pages: the masthead sits on artwork like the hero, then the story reads on the page surface. */
+.case-study {
+  background: var(--surface-canvas);
+}
+
+.case-masthead {
+  display: grid;
+  gap: var(--space-md);
+  padding: clamp(var(--space-150), 18vw, var(--space-220)) max(var(--layout-margin), calc((100% - var(--layout-content)) / 2 + var(--layout-margin))) clamp(var(--space-60), 8vw, var(--space-100));
+  color: var(--text-on-artwork);
+  background: var(--gradient-closing-glow), var(--surface-artwork);
+  --text-muted: var(--text-inverse-faint);
+}
+
+.case-crumbs {
+  display: flex;
+  gap: var(--space-xs);
+  font-family: var(--text-sm-family);
+  font-size: var(--text-sm-size);
+  color: var(--text-muted);
+}
+
+.case-crumbs a {
+  color: inherit;
+}
+
+.case-masthead h1 {
+  margin: 0;
+  font-family: var(--text-heading-family);
+  font-size: var(--text-section-size);
+  font-weight: var(--font-weight-book);
+  line-height: var(--text-line-0_92);
+  letter-spacing: var(--text-tracking-minus-0_05);
+  text-wrap: balance;
+}
+
+.case-masthead > p {
+  max-width: var(--layout-size-500);
+  margin: 0;
+  font-family: var(--text-lg-family);
+  font-size: var(--text-lg-size);
+  line-height: var(--text-lg-line);
+}
+
+.case-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xl);
+  margin: var(--space-md) 0 0;
+}
+
+.case-meta dt {
+  color: var(--text-muted);
+  font-family: var(--text-xs-family);
+  font-size: var(--text-xs-size);
+  letter-spacing: var(--text-xs-tracking);
+  text-transform: uppercase;
+}
+
+.case-meta dd {
+  margin: var(--space-2xs) 0 0;
+  font-family: var(--text-base-family);
+  font-size: var(--text-base-size);
+}
+
+.case-cover,
+.case-sections,
+.case-footer {
+  width: min(100%, var(--layout-content));
+  margin-right: auto;
+  margin-left: auto;
+  padding-right: var(--layout-margin);
+  padding-left: var(--layout-margin);
+}
+
+.case-cover {
+  margin-top: calc(var(--space-60) * -1);
+  margin-bottom: 0;
+}
+
+.case-cover img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-tile);
+}
+
+.case-sections {
+  display: grid;
+  gap: var(--space-60);
+  padding-top: var(--space-100);
+  padding-bottom: var(--space-100);
+}
+
+.case-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: var(--space-xl);
+}
+
+.case-section h2 {
+  margin: 0;
+  color: var(--text-heading);
+  font-family: var(--text-heading-family);
+  font-size: var(--text-4xl-size);
+  font-weight: var(--font-weight-book);
+  line-height: var(--text-4xl-line);
+  letter-spacing: var(--text-4xl-tracking);
+}
+
+.case-section p {
+  margin: 0;
+  color: var(--text-body);
+  font-family: var(--text-lg-family);
+  font-size: var(--text-lg-size);
+  line-height: var(--text-lg-line);
+}
+
+.case-footer {
+  padding-bottom: var(--space-100);
+}
+
+.case-footer a {
+  color: var(--text-heading);
+  font-family: var(--text-base-family);
+  font-size: var(--text-base-size);
+}
+
+@media (--mobile) {
+  .case-section {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+}

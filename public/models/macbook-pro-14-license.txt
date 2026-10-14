@@ -1,0 +1,11 @@
+Model Information:
+* title:	2021 Macbook Pro 14" (M1 Pro / M1 Max)
+* source:	https://sketchfab.com/3d-models/2021-macbook-pro-14-m1-pro-m1-max-f6b0b940fb6a4286b18a674ef32af2d3
+* author:	akshatmittal (https://sketchfab.com/akshatmittal)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "2021 Macbook Pro 14" (M1 Pro / M1 Max)" (https://sketchfab.com/3d-models/2021-macbook-pro-14-m1-pro-m1-max-f6b0b940fb6a4286b18a674ef32af2d3) by akshatmittal (https://sketchfab.com/akshatmittal) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

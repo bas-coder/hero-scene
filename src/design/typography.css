@@ -1,0 +1,263 @@
+/* Reusable text styles. Sizes resolve through Responsive. */
+:root {
+  /* Text styles */
+  --text-display-family: var(--font-family-display);
+  --text-heading-family: var(--font-family-heading);
+  --text-body-family: var(--font-family-body);
+  --text-code-family: var(--font-family-mono);
+  --text-code-line: 1.6;
+
+  --text-xxs-family: var(--text-body-family);
+  --text-xxs-weight: var(--font-weight-bold);
+  --text-xxs-line: 1.2;
+  --text-xxs-tracking: 0.12em;
+
+  --text-xs-family: var(--text-body-family);
+  --text-xs-weight: var(--font-weight-bold);
+  --text-xs-line: 1.2;
+  --text-xs-tracking: 0.12em;
+
+  --text-sm-family: var(--text-body-family);
+  --text-sm-weight: var(--font-weight-bold);
+  --text-sm-line: 1.2;
+  --text-sm-tracking: -0.01em;
+
+  --text-base-family: var(--text-body-family);
+  --text-base-weight: var(--font-weight-medium);
+  --text-base-line: 1.3;
+  --text-base-tracking: -0.02em;
+
+  --text-md-family: var(--text-body-family);
+  --text-md-weight: var(--font-weight-bold);
+  --text-md-line: 1.25;
+  --text-md-tracking: -0.03em;
+
+  --text-lg-family: var(--text-body-family);
+  --text-lg-weight: var(--font-weight-regular);
+  --text-lg-line: 1.45;
+  --text-lg-tracking: 0em;
+
+  --text-xl-family: var(--text-body-family);
+  --text-xl-weight: var(--font-weight-regular);
+  --text-xl-line: 1.3;
+  --text-xl-tracking: 0em;
+
+  --text-2xl-family: var(--text-heading-family);
+  --text-2xl-weight: var(--font-weight-semibold);
+  --text-2xl-line: 1.15;
+  --text-2xl-tracking: 0em;
+
+  --text-3xl-family: var(--text-heading-family);
+  --text-3xl-weight: var(--font-weight-medium);
+  --text-3xl-line: 1.05;
+  --text-3xl-tracking: 0em;
+
+  --text-4xl-family: var(--text-heading-family);
+  --text-4xl-weight: var(--font-weight-medium);
+  --text-4xl-line: 0.96;
+  --text-4xl-tracking: -0.03em;
+
+  --text-5xl-family: var(--text-heading-family);
+  --text-5xl-weight: var(--font-weight-medium);
+  --text-5xl-line: 0.92;
+  --text-5xl-tracking: -0.035em;
+
+  --text-6xl-family: var(--text-heading-family);
+  --text-6xl-weight: var(--font-weight-semibold);
+  --text-6xl-line: 0.92;
+  --text-6xl-tracking: -0.04em;
+
+  --text-7xl-family: var(--text-heading-family);
+  --text-7xl-weight: var(--font-weight-regular);
+  --text-7xl-line: 0.9;
+  --text-7xl-tracking: -0.04em;
+
+  --text-8xl-family: var(--text-heading-family);
+  --text-8xl-weight: var(--font-weight-regular);
+  --text-8xl-line: 0.86;
+  --text-8xl-tracking: -0.045em;
+
+  --text-9xl-family: var(--text-display-family);
+  --text-9xl-weight: var(--font-weight-semibold);
+  --text-9xl-tracking: -0.045em;
+
+  --text-display-weight: var(--font-weight-regular);
+  --text-display-line: 0.84;
+  --text-display-tracking: -0.045em;
+
+  /* Statement under the client grid, at cr8ivelarry.live's about-line metrics (500, -0.02em). His 1.0 line
+     height suits all caps; normal-case serif gets a hair more so descenders clear the next line. */
+  --text-statement-family: var(--text-display-family);
+  --text-statement-weight: var(--font-weight-medium);
+  --text-statement-line: 1.05;
+  --text-statement-tracking: -0.02em;
+
+  /* The action studios wordmark: the hero name's face, set tight like a logotype. */
+  --text-wordmark-family: var(--text-display-family);
+  --text-wordmark-weight: var(--font-weight-semibold);
+  --text-wordmark-line: 0.84;
+  --text-wordmark-tracking: -0.045em;
+
+  /* Handwritten "Led by" beside the portrait (avecanni.studio). */
+  --text-signature-family: var(--font-family-hand);
+  --text-signature-weight: var(--font-weight-plain);
+  --text-signature-line: 1.2;
+}
+
+
+:root {
+  --text-line-1: 1;
+  --text-line-1_3: 1.3;
+  --text-tracking-0_09: 0.09em;
+  --text-line-0_88: 0.88;
+  --text-tracking-minus-0_058: -0.058em;
+  --text-line-1_5: 1.5;
+  --text-tracking-0_08: 0.08em;
+  --text-line-0_92: 0.92;
+  --text-tracking-minus-0_05: -0.05em;
+  --text-tracking-0_16: 0.16em;
+  --text-line-0_74: 0.74;
+  --text-tracking-minus-0_06: -0.06em;
+  --text-line-0_8: 0.8;
+  --text-tracking-minus-0_08: -0.08em;
+  --text-line-1_4: 1.4;
+  --text-line-1_375: 1.375;
+  --text-line-0_84: 0.84;
+  --text-tracking-minus-0_035: -0.035em;
+  --text-line-1_55: 1.55;
+}
+
+.text-xxs {
+  font-family: var(--text-xxs-family);
+  font-size: var(--text-xxs-size);
+  font-weight: var(--text-xxs-weight);
+  line-height: var(--text-xxs-line);
+  letter-spacing: var(--text-xxs-tracking);
+}
+
+.text-xs {
+  font-family: var(--text-xs-family);
+  font-size: var(--text-xs-size);
+  font-weight: var(--text-xs-weight);
+  line-height: var(--text-xs-line);
+  letter-spacing: var(--text-xs-tracking);
+}
+
+.text-sm {
+  font-family: var(--text-sm-family);
+  font-size: var(--text-sm-size);
+  font-weight: var(--text-sm-weight);
+  line-height: var(--text-sm-line);
+  letter-spacing: var(--text-sm-tracking);
+}
+
+.text-base {
+  font-family: var(--text-base-family);
+  font-size: var(--text-base-size);
+  font-weight: var(--text-base-weight);
+  line-height: var(--text-base-line);
+  letter-spacing: var(--text-base-tracking);
+}
+
+.text-md {
+  font-family: var(--text-md-family);
+  font-size: var(--text-md-size);
+  font-weight: var(--text-md-weight);
+  line-height: var(--text-md-line);
+  letter-spacing: var(--text-md-tracking);
+}
+
+.text-lg {
+  font-family: var(--text-lg-family);
+  font-size: var(--text-lg-size);
+  font-weight: var(--text-lg-weight);
+  line-height: var(--text-lg-line);
+  letter-spacing: var(--text-lg-tracking);
+}
+
+.text-xl {
+  font-family: var(--text-xl-family);
+  font-size: var(--text-xl-size);
+  font-weight: var(--text-xl-weight);
+  line-height: var(--text-xl-line);
+  letter-spacing: var(--text-xl-tracking);
+}
+
+.text-2xl {
+  font-family: var(--text-2xl-family);
+  font-size: var(--text-2xl-size);
+  font-weight: var(--text-2xl-weight);
+  line-height: var(--text-2xl-line);
+  letter-spacing: var(--text-2xl-tracking);
+}
+
+.text-3xl {
+  font-family: var(--text-3xl-family);
+  font-size: var(--text-3xl-size);
+  font-weight: var(--text-3xl-weight);
+  line-height: var(--text-3xl-line);
+  letter-spacing: var(--text-3xl-tracking);
+}
+
+.text-4xl {
+  font-family: var(--text-4xl-family);
+  font-size: var(--text-4xl-size);
+  font-weight: var(--text-4xl-weight);
+  line-height: var(--text-4xl-line);
+  letter-spacing: var(--text-4xl-tracking);
+}
+
+.text-5xl {
+  font-family: var(--text-5xl-family);
+  font-size: var(--text-5xl-size);
+  font-weight: var(--text-5xl-weight);
+  line-height: var(--text-5xl-line);
+  letter-spacing: var(--text-5xl-tracking);
+}
+
+.text-6xl {
+  font-family: var(--text-6xl-family);
+  font-size: var(--text-6xl-size);
+  font-weight: var(--text-6xl-weight);
+  line-height: var(--text-6xl-line);
+  letter-spacing: var(--text-6xl-tracking);
+}
+
+.text-7xl {
+  font-family: var(--text-7xl-family);
+  font-size: var(--text-7xl-size);
+  font-weight: var(--text-7xl-weight);
+  line-height: var(--text-7xl-line);
+  letter-spacing: var(--text-7xl-tracking);
+}
+
+.text-8xl {
+  font-family: var(--text-8xl-family);
+  font-size: var(--text-8xl-size);
+  font-weight: var(--text-8xl-weight);
+  line-height: var(--text-8xl-line);
+  letter-spacing: var(--text-8xl-tracking);
+}
+
+.text-9xl {
+  font-family: var(--text-9xl-family);
+  font-size: var(--text-9xl-size);
+  font-weight: var(--text-9xl-weight);
+  line-height: var(--text-9xl-line);
+  letter-spacing: var(--text-9xl-tracking);
+}
+
+/* Typography used by the illustrated interface texture. */
+:root {
+  --text-scene-brand-font: var(--font-weight-strong) var(--scale-34) var(--font-family-body);
+  --text-scene-label-font: var(--font-weight-medium) var(--scale-18) var(--font-family-body);
+  --text-scene-heading-font: var(--font-weight-medium) var(--scale-24) var(--font-family-body);
+  --text-scene-body-font: var(--font-weight-plain) var(--scale-18) var(--font-family-body);
+}
+
+:root {
+  --text-control-family: var(--font-family-control);
+  --text-control-weight: var(--font-weight-medium);
+  --text-control-line: 1.5;
+  --text-control-tracking: -0.01em;
+}

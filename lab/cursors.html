@@ -1,0 +1,567 @@
+<!doctype html>
+<!--
+  Cursor lab: a procedural three.js photo studio for the site's cursors.
+  Each cursor is built from its SVG in lab/cursors/source/, lit, rendered offline and baked to PNGs by
+  `npm run cursors` (scripts/bake-cursors.mjs). The site uses the PNGs as native CSS cursors, so the
+  operating system draws them: no lag, no JavaScript, no GPU cost.
+
+  Open http://localhost:4190/lab/cursors.html (`npm run cursors -- --serve`) to review the baked set.
+  ?bake   exposes window.cursorLab for the bake script     ?sheet   the review sheet captured for scoring
+
+  Taste rules (from reviews; the judge checks every one):
+  1. No decorative shines or light sweeps. Every highlight is a real reflection of a softbox.
+  2. Shadows are warm grey, never violet.
+  3. No pixelation or banding at 1x, 2x or 3x.
+  4. The hotspot pixel sits on the tip.
+  5. One family: the same camera, lights and materials for every cursor.
+  6. A AAA product shot, not a WebGL demo.
+-->
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cursor lab</title>
+<link rel="stylesheet" href="/src/design/tokens.css">
+<link rel="stylesheet" href="/src/design/cursors.css">
+<script>
+  // Surfaces lab errors on the page and to the bake script.
+  const fail = (message) => { const status = document.querySelector("#status"); if (status) { status.dataset.error = message; status.textContent = `Error: ${message}`; } };
+  addEventListener("error", (event) => fail(event.message));
+  addEventListener("unhandledrejection", (event) => fail(String(event.reason?.stack ?? event.reason)));
+</script>
+<script src="/node_modules/clipper-lib/clipper.js"></script>
+<script type="importmap">
+{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/" } }
+</script>
+<style>
+  body { margin: 0; padding: 32px 40px 64px; background: var(--surface-canvas); color: var(--text-heading); font: 14px/1.45 system-ui, sans-serif; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  h2 { margin: 0 0 10px; font-size: 15px; }
+  h2 small { margin-left: 8px; color: var(--text-muted); font-weight: 400; }
+  .intro { max-width: 760px; margin-bottom: 24px; }
+  .intro ol { margin: 8px 0; padding-left: 20px; color: var(--text-muted); }
+  #status { color: var(--text-muted); }
+  .refs { display: flex; gap: 16px; margin-bottom: 32px; }
+  .refs figure { margin: 0; }
+  .refs img { display: block; height: 180px; border-radius: 8px; background: var(--color-white); }
+  .refs figcaption, .zoom figcaption { margin-top: 4px; color: var(--text-muted); font-size: 12px; }
+  .row { padding: 20px 0; border-top: 1px solid var(--line-subtle, var(--color-stone-200)); }
+  .tiles { display: flex; gap: 12px; margin-bottom: 14px; }
+  .tile { display: flex; align-items: center; gap: 28px; padding: 18px 26px; border-radius: 12px; }
+  .tile img { display: block; }
+  .light { background: var(--color-stone-100); }
+  .bright { background: var(--color-stone-50); }
+  .dark { background: var(--color-stone-800); }
+  .hero { background: radial-gradient(circle at 30% 25%, var(--color-cobalt-800), var(--color-stone-900) 70%); }
+  .zoom { display: flex; align-items: flex-end; gap: 20px; }
+  .zoom figure { margin: 0; }
+  .zoom .px { image-rendering: pixelated; }
+  .checker { background: repeating-conic-gradient(var(--color-stone-200) 0 25%, var(--color-stone-50) 0 50%) 0 0 / 12px 12px; border-radius: 6px; }
+  .missing { color: var(--text-muted); font-style: italic; }
+</style>
+</head>
+<body>
+<header class="intro">
+  <h1>Cursor lab</h1>
+  <p>Seven cursors built from the SVGs, lit in a procedural studio and baked to native cursors. Hover a tile to feel the real cursor. Re-bake with <code>npm run cursors</code>.</p>
+  <ol>
+    <li>No decorative shines or light sweeps</li>
+    <li>Shadows warm grey, never violet</li>
+    <li>No pixelation or banding at 1x, 2x or 3x</li>
+    <li>The hotspot pixel sits on the tip</li>
+    <li>One family: same camera, lights and materials</li>
+    <li>A AAA product shot, not a WebGL demo</li>
+  </ol>
+  <p id="status">Rendering…</p>
+</header>
+<section class="refs">
+  <figure><img src="/lab/cursors/source/pointer.png" alt=""><figcaption>Reference: pointer</figcaption></figure>
+  <figure><img src="/lab/cursors/source/hand.png" alt=""><figcaption>Reference: hover hand</figcaption></figure>
+</section>
+<section id="rows"></section>
+
+<script type="module">
+import * as THREE from "three";
+import { SVGLoader } from "three/addons/loaders/SVGLoader.js";
+import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
+import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
+import { cursors, densities, maxCursorSize, fileName } from "./cursor-specs.mjs";
+
+const Clipper = window.ClipperLib;
+const deg = THREE.MathUtils.degToRad;
+
+// ---------------------------------------------------------------- look
+// Every cursor shares this rig, so the set reads as one family.
+const look = {
+  scale: 0.34,            // CSS px per SVG unit: the arrow face is about 20 CSS px tall, like macOS; with depth and shadow every image stays within 32
+  frame: 44,              // the square the camera frames, in CSS px; crops are cut from it
+  fov: 30,
+  azimuth: 26,            // shift lens: the camera sits this far left and down but faces the cursor square-on,
+  elevation: 24,          // so the face keeps its SVG shape (level stays level) and the depth shows left and bottom
+  body: { depth: 9, bevel: 1, size: 0.8 },
+  face: { depth: 0.2, bevel: 0.5, size: 0.8, raise: 0.4 },
+  bevelSegments: 6,
+  crease: 40,             // degrees: smooth across bevels and curves, keep sharp tips sharp
+  gap: 3.5,               // the cursor floats this far above the page
+  light: { dir: [-0.42, 0.62, 0.66], intensity: 1.5, spread: 11 },   // spread: the key's angular radius, degrees
+  glow: { intensity: 4.2, size: 70 },   // a near softbox above the cursor: the face falls off gently from top to bottom
+  env: 1,
+  exposure: 1,
+  shadow: 0.36,
+  samples: 256,
+  hint: { rim: 1.5, depth: 0.6 },   // 1x only: a ~1.5px black rim (edges with no wall behind them grey out under that) and a shallower body
+  supersample: 4,         // each file renders at (at least) 4× its pixels; the bake downsamples with Lanczos for crisp 1px outlines
+  measureSamples: 24,
+  alphaFloor: 6,          // crop to pixels at least this opaque (of 255); the shadow's fainter tail is invisible
+  faceMaterial: { roughness: 0.42, clearcoat: 0.35, clearcoatRoughness: 0.22 },
+  bodyMaterial: { roughness: 0.25, specularIntensity: 0.5, clearcoat: 0.55, clearcoatRoughness: 0.05 },
+};
+
+// ---------------------------------------------------------------- helpers
+function rng(seed) {
+  return () => {
+    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+// Low-discrepancy sequences: R2 for pixel jitter, Halton (2, 3) for points on the key light.
+const r2 = (i) => [(0.5 + i * 0.7548776662466927) % 1, (0.5 + i * 0.5698402909980532) % 1];
+function halton(i, base) { let f = 1, r = 0; while (i > 0) { f /= base; r += f * (i % base); i = Math.floor(i / base); } return r; }
+const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const toBase64 = (bytes) => { let s = ""; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); };
+
+// ---------------------------------------------------------------- renderer
+const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.setClearColor(0x000000, 0);
+const gpu = {
+  renderer: (() => { const gl = renderer.getContext(); const info = gl.getExtension("WEBGL_debug_renderer_info"); return info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER); })(),
+  floatTargets: renderer.extensions.has("EXT_color_buffer_float"),
+};
+
+const colours = {
+  face: new THREE.Color(token("--scene-cursor-face")),
+  body: new THREE.Color(token("--scene-cursor-body")),
+  shadow: new THREE.Color(token("--scene-cursor-shadow")),
+};
+
+// ---------------------------------------------------------------- studio
+// A warm room lit by neutral softboxes (warm lights on a warm-white face read cream): a gradient dome, one big softbox up-left in front (the key), a dimmer one behind-left that
+// draws the lacquer edges, and a small fill card on the right. No strip lights, so no streaks.
+function studio() {
+  const room = new THREE.Scene();
+  const warm = colours.face;
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(400, 64, 32),
+    new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      uniforms: { top: { value: warm.clone().multiplyScalar(0.55) }, horizon: { value: warm.clone().multiplyScalar(0.22) }, bottom: { value: warm.clone().multiplyScalar(0.07) } },
+      vertexShader: "varying vec3 vDir; void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+      fragmentShader: "uniform vec3 top, horizon, bottom; varying vec3 vDir; void main() { float y = vDir.y; vec3 c = y > 0.0 ? mix(horizon, top, pow(y, 0.7)) : mix(horizon, bottom, pow(-y, 0.5)); gl_FragColor = vec4(c, 1.0); }",
+    }),
+  );
+  room.add(dome);
+  const softbox = (width, height, intensity, position) => {
+    const panel = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 1, 1).multiplyScalar(intensity), side: THREE.DoubleSide }));
+    panel.position.set(...position);
+    panel.lookAt(0, 0, 0);
+    room.add(panel);
+  };
+  softbox(180, 180, 5, [-160, 200, 220]);     // key
+  softbox(620, 260, 0.5, [-120, -40, -300]);   // backdrop: the walls we see face left and down, so they mirror what's behind
+  softbox(120, 200, 0.8, [260, -20, 160]);    // fill
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const texture = pmrem.fromScene(room, 0.02, 1, 1000).texture;   // the default far plane (100) would clip the whole room
+  pmrem.dispose();
+  return texture;
+}
+
+// ---------------------------------------------------------------- scene
+const scene = new THREE.Scene();
+scene.environment = studio();
+scene.environmentIntensity = look.env;
+
+const target = new THREE.Vector3(32, -32, 2);   // the SVG frame's centre; y is flipped from SVG space
+const camera = new THREE.PerspectiveCamera(look.fov, 1, 1, 4000);
+// Shift lens, as in architectural photography: the camera stands down-left of the cursor but looks straight
+// along -z, and every render window is offset by `lens` (CSS px) to bring the cursor back to the frame centre.
+const lens = {};
+{
+  const distance = (look.frame / look.scale / 2) / Math.tan(deg(look.fov / 2));
+  camera.position.set(target.x - distance * Math.tan(deg(look.azimuth)), target.y - distance * Math.tan(deg(look.elevation)), target.z + distance);
+  camera.updateMatrixWorld();
+  const centre = target.clone().project(camera);
+  lens.x = (centre.x / 2) * look.frame;
+  lens.y = (-centre.y / 2) * look.frame;
+}
+
+const lightDistance = 200;
+const lightDir = new THREE.Vector3(...look.light.dir).normalize();
+const lightU = new THREE.Vector3().crossVectors(lightDir, new THREE.Vector3(0, 0, 1)).normalize();
+const lightV = new THREE.Vector3().crossVectors(lightDir, lightU).normalize();
+const key = new THREE.DirectionalLight(0xffffff, look.light.intensity);
+key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+Object.assign(key.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, near: 1, far: 500 });
+key.shadow.camera.updateProjectionMatrix();
+key.shadow.bias = -0.0004;
+key.shadow.normalBias = 0.04;
+key.target.position.copy(target);
+scene.add(key, key.target);
+
+RectAreaLightUniformsLib.init();
+const glow = new THREE.RectAreaLight(0xffffff, look.glow.intensity, look.glow.size, look.glow.size);
+// Up-left, near the key: its reflection in the lacquer rim points away from the camera, so outlines stay black.
+glow.position.set(target.x - 45, target.y + 65, 55);
+glow.lookAt(target);
+scene.add(glow);
+
+// Each sample moves the key to a point on a disc, so the average is an area light with soft, contact-hardening shadows.
+function placeLight(i) {
+  const r = Math.sqrt(halton(i + 1, 2)) * Math.tan(deg(look.light.spread)) * lightDistance;
+  const a = 2 * Math.PI * halton(i + 1, 3);
+  key.position.copy(target).addScaledVector(lightDir, lightDistance).addScaledVector(lightU, r * Math.cos(a)).addScaledVector(lightV, r * Math.sin(a));
+  key.target.updateMatrixWorld();
+}
+
+// ---------------------------------------------------------------- materials
+function roughnessNoise() {
+  const size = 16, random = rng(7), data = new Uint8Array(size * size * 4);
+  for (let i = 0; i < size * size; i++) { const v = Math.round(255 * (0.88 + random() * 0.12)); data.set([v, v, v, 255], i * 4); }
+  const texture = new THREE.DataTexture(data, size, size);
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.magFilter = THREE.LinearFilter;
+  texture.repeat.set(1 / 64, 1 / 64);   // UVs are in SVG units: one 4-unit blob per texel
+  texture.needsUpdate = true;
+  return texture;
+}
+const materials = {
+  light: new THREE.MeshPhysicalMaterial({ color: colours.face, roughnessMap: roughnessNoise(), ...look.faceMaterial }),
+  dark: new THREE.MeshPhysicalMaterial({ color: colours.body, ...look.bodyMaterial }),
+};
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.ShadowMaterial({ color: colours.shadow, opacity: look.shadow }));
+ground.position.set(target.x, target.y, -look.body.bevel - look.gap);
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ---------------------------------------------------------------- geometry
+const S = 1000;   // Clipper works in integers: 1/1000 of an SVG unit
+
+async function loadFace(file) {
+  const text = await (await fetch(`/lab/cursors/source/${encodeURIComponent(file)}`)).text();
+  const doc = new DOMParser().parseFromString(text, "image/svg+xml");
+  const node = [...doc.querySelectorAll("g[filter] > path")].find((path) => (path.getAttribute("fill") ?? "none") !== "none");
+  if (!node) throw new Error(`${file}: no filled path`);
+  const rule = node.getAttribute("fill-rule");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg"><path d="${node.getAttribute("d")}" fill="black"${rule ? ` fill-rule="${rule}"` : ""}/></svg>`;
+  const rings = [];
+  for (const path of new SVGLoader().parse(svg).paths) {
+    for (const shape of SVGLoader.createShapes(path)) {
+      const { shape: outer, holes } = shape.extractPoints(32);
+      rings.push(outer, ...holes);
+    }
+  }
+  const paths = rings.map((ring) => ring.map((p) => ({ X: Math.round(p.x * S), Y: Math.round(-p.y * S) })));
+  const clipper = new Clipper.Clipper();
+  clipper.AddPaths(paths, Clipper.PolyType.ptSubject, true);
+  const tree = new Clipper.PolyTree();
+  clipper.Execute(Clipper.ClipType.ctUnion, tree, Clipper.PolyFillType.pftEvenOdd, Clipper.PolyFillType.pftEvenOdd);
+  return tree;
+}
+
+// Grows the face outward; Clipper keeps mitred tips sharp and never folds inside notches.
+function grow(tree, delta, join) {
+  const offset = new Clipper.ClipperOffset(4, 0.004 * S);
+  offset.AddPaths(Clipper.Clipper.PolyTreeToPaths(tree), join === "round" ? Clipper.JoinType.jtRound : Clipper.JoinType.jtMiter, Clipper.EndType.etClosedPolygon);
+  const grown = new Clipper.PolyTree();
+  offset.Execute(grown, delta * S);
+  return grown;
+}
+
+function shapesOf(tree) {
+  const shapes = [];
+  // Cleaning drops near-duplicate and collinear points: micro-segments in the SVGs otherwise leave sliver
+  // triangles in the caps whose stray normals show as light seams.
+  const ring = (node) => Clipper.Clipper.CleanPolygon(node.Contour(), 0.008 * S).map((p) => new THREE.Vector2(p.X / S, p.Y / S));
+  const walk = (node) => {
+    for (const outer of node.Childs()) {
+      const shape = new THREE.Shape(ring(outer));
+      for (const hole of outer.Childs()) { shape.holes.push(new THREE.Path(ring(hole))); walk(hole); }
+      shapes.push(shape);
+    }
+  };
+  walk(tree);
+  return shapes;
+}
+
+function slab(shapes, { depth, bevel, size }) {
+  const geometry = new THREE.ExtrudeGeometry(shapes, { depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: size, bevelOffset: -size, bevelSegments: look.bevelSegments, steps: 1, curveSegments: 1 });
+  return toCreasedNormals(geometry, deg(look.crease));
+}
+
+const built = new Map();
+const faces = new Map();
+
+// Optical hinting, as fonts do at small sizes. The SVGs are drawn on a 64-unit grid and the cursors are about
+// 22px, so 1x strokes fall under 1.5px. The "1x" variant gets a fuller rim, a shallower body and, for thin
+// icons, a face grown by spec.hint units. Its top stays at the "hd" height, so every density shares one hotspot.
+async function build(spec, variant = "hd") {
+  const id = `${spec.name}:${variant}`;
+  if (built.has(id)) return built.get(id);
+  if (!faces.has(spec.file)) faces.set(spec.file, await loadFace(spec.file));
+  const hinted = variant === "1x";
+  const base = faces.get(spec.file);
+  const tree = hinted && spec.hint ? grow(base, spec.hint, "round") : base;
+  const outline = grow(tree, spec.rim + (hinted ? look.hint.rim : 0), spec.join);
+  const group = new THREE.Group();
+  const depth = look.body.depth * (spec.depth ?? 1);
+  const bodyLook = { ...look.body, depth: depth * (hinted ? look.hint.depth : 1) };
+  const top = depth + bodyLook.bevel;
+  group.position.z = depth - bodyLook.depth;   // a shallower body loses depth underneath, not on top
+  // One family, as in the references: a white satin face on a black lacquer body, whatever the SVG's fill.
+  const body = new THREE.Mesh(slab(shapesOf(outline), bodyLook), materials.dark);
+  const face = new THREE.Mesh(slab(shapesOf(tree), look.face), materials.light);
+  face.position.z = top + look.face.raise - (look.face.depth + look.face.bevel);
+  for (const mesh of [body, face]) { mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh); }
+
+  let hotspot;
+  if (spec.hotspot === "centre") {
+    const box = new THREE.Box3().setFromObject(face);
+    hotspot = new THREE.Vector3((box.min.x + box.max.x) / 2, (box.min.y + box.max.y) / 2, top);
+  } else {
+    const [hx, hy] = spec.hotspot;
+    let best = null, bestDistance = Infinity;
+    for (const path of Clipper.Clipper.PolyTreeToPaths(outline)) {
+      for (const p of path) {
+        const d = Math.hypot(p.X / S - hx, p.Y / S + hy);
+        if (d < bestDistance) { bestDistance = d; best = p; }
+      }
+    }
+    hotspot = new THREE.Vector3(best.X / S, best.Y / S, top);
+  }
+  const entry = { group, hotspot };
+  built.set(id, entry);
+  return entry;
+}
+
+// ---------------------------------------------------------------- render passes
+const fullscreen = new THREE.BufferGeometry();
+fullscreen.setAttribute("position", new THREE.Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3));
+fullscreen.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, 2, 0, 0, 2], 2));
+const passVertex = "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }";
+// Running mean in a Float target: no precision loss however many samples.
+const average = new THREE.ShaderMaterial({
+  blending: THREE.NoBlending, depthTest: false, depthWrite: false,
+  uniforms: { previous: { value: null }, current: { value: null }, weight: { value: 1 } },
+  vertexShader: passVertex,
+  fragmentShader: "uniform sampler2D previous, current; uniform float weight; varying vec2 vUv; void main() { gl_FragColor = mix(texture2D(previous, vUv), texture2D(current, vUv), weight); }",
+});
+// Unpremultiply, tone-map once (Khronos PBR Neutral keeps the white face white), encode sRGB, dither by half a step.
+const finish = new THREE.ShaderMaterial({
+  blending: THREE.NoBlending, depthTest: false, depthWrite: false,
+  uniforms: { image: { value: null }, exposure: { value: look.exposure } },
+  vertexShader: passVertex,
+  fragmentShader: `
+    uniform sampler2D image; uniform float exposure; varying vec2 vUv;
+    vec3 neutral(vec3 color) {
+      const float start = 0.8 - 0.04; const float desaturation = 0.15;
+      float x = min(color.r, min(color.g, color.b));
+      float offset = x < 0.08 ? x - 6.25 * x * x : 0.04;
+      color -= offset;
+      float peak = max(color.r, max(color.g, color.b));
+      if (peak < start) return color;
+      float d = 1.0 - start;
+      float newPeak = 1.0 - d * d / (peak + d - start);
+      color *= newPeak / peak;
+      float g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
+      return mix(color, vec3(newPeak), g);
+    }
+    vec3 srgb(vec3 c) { return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
+    void main() {
+      vec4 c = texture2D(image, vUv);
+      if (c.a <= 0.0) { gl_FragColor = vec4(0.0); return; }
+      vec3 rgb = srgb(clamp(neutral(c.rgb / c.a * exposure), 0.0, 1.0));
+      float n = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) - 0.5;
+      float a = c.a < 1.0 ? c.a + n / 255.0 : 1.0;
+      gl_FragColor = vec4(clamp(rgb + n / 255.0, 0.0, 1.0), clamp(a, 0.0, 1.0));
+    }`,
+});
+const pass = new THREE.Mesh(fullscreen, average);
+pass.frustumCulled = false;
+const passScene = new THREE.Scene().add(pass);
+const passCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+function target2d(w, h, type, depthBuffer) {
+  return new THREE.WebGLRenderTarget(w, h, { type, format: THREE.RGBAFormat, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer, generateMipmaps: false });
+}
+
+/** Renders a window of the camera's square frame. All sizes in device px. Returns straight-alpha RGBA, top row first. */
+function renderWindow({ frame, x, y, w, h, samples }) {
+  const sample = target2d(w, h, THREE.HalfFloatType, true);
+  const sums = [target2d(w, h, THREE.FloatType, false), target2d(w, h, THREE.FloatType, false)];
+  const out = target2d(w, h, THREE.UnsignedByteType, false);
+  renderer.setRenderTarget(sums[0]); renderer.clear();
+  let read = 0;
+  for (let i = 0; i < samples; i++) {
+    const [jx, jy] = r2(i);
+    const k = frame / look.frame;
+    camera.setViewOffset(frame, frame, x + lens.x * k + jx - 0.5, y + lens.y * k + jy - 0.5, w, h);
+    placeLight(i);
+    renderer.setRenderTarget(sample);
+    renderer.render(scene, camera);
+    pass.material = average;
+    average.uniforms.previous.value = sums[read].texture;
+    average.uniforms.current.value = sample.texture;
+    average.uniforms.weight.value = 1 / (i + 1);
+    renderer.setRenderTarget(sums[1 - read]);
+    renderer.render(passScene, passCamera);
+    read = 1 - read;
+  }
+  pass.material = finish;
+  finish.uniforms.image.value = sums[read].texture;
+  renderer.setRenderTarget(out);
+  renderer.render(passScene, passCamera);
+  const raw = new Uint8Array(w * h * 4);
+  renderer.readRenderTargetPixels(out, 0, 0, w, h, raw);
+  renderer.setRenderTarget(null);
+  camera.clearViewOffset();
+  for (const t of [sample, ...sums, out]) t.dispose();
+  const rows = new Uint8Array(raw.length), stride = w * 4;
+  for (let row = 0; row < h; row++) rows.set(raw.subarray((h - 1 - row) * stride, (h - row) * stride), row * stride);
+  return rows;
+}
+
+/** Finds the crop: the visible bounds at 3x, then a window whose hotspot lands on whole CSS pixels. */
+const windows = new Map();
+async function frameFor(spec) {
+  if (windows.has(spec.name)) return windows.get(spec.name);
+  const { hotspot } = await build(spec);
+  const d = 3, frame = look.frame * d;
+  let x0 = frame, y0 = frame, x1 = 0, y1 = 0;
+  // One crop for every density: the union of the hd and the hinted 1x silhouettes.
+  for (const variant of ["hd", "1x"]) {
+    const { group } = await build(spec, variant);
+    stage(spec, group);
+    const pixels = renderWindow({ frame, x: 0, y: 0, w: frame, h: frame, samples: look.measureSamples });
+    scene.remove(group);
+    for (let y = 0; y < frame; y++) for (let x = 0; x < frame; x++) {
+      if (pixels[(y * frame + x) * 4 + 3] >= look.alphaFloor) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + 1); y1 = Math.max(y1, y + 1); }
+    }
+  }
+  if (x1 <= x0 || y1 <= y0) throw new Error(`${spec.name} rendered nothing visible`);
+  const p = hotspot.clone().project(camera);
+  // A tip lands exactly on the hotspot. A centre lands mid-pixel, so a 1.6px stem fills one whole pixel at 1x instead of greying two.
+  const half = spec.hotspot === "centre" ? 0.5 : 0;
+  const px = (p.x + 1) / 2 * look.frame - lens.x - half, py = (1 - p.y) / 2 * look.frame - lens.y - half;
+  const hx = Math.max(0, Math.ceil(px - x0 / d)), hy = Math.max(0, Math.ceil(py - y0 / d));
+  const x = px - hx, y = py - hy;
+  const result = { x, y, w: Math.ceil(x1 / d - x), h: Math.ceil(y1 / d - y), hotspot: [hx, hy] };
+  if (result.w > maxCursorSize || result.h > maxCursorSize) throw new Error(`${spec.name} is ${result.w}×${result.h} CSS px; the limit is ${maxCursorSize}`);
+  windows.set(spec.name, result);
+  return result;
+}
+
+function stage(spec, group) {
+  ground.material.opacity = look.shadow * (spec.shadow ?? 1);
+  scene.add(group);
+}
+
+async function render(spec, density, variant = "hd", samples = look.samples) {
+  const win = await frameFor(spec);
+  const { group } = await build(spec, variant);
+  stage(spec, group);
+  const pixels = renderWindow({ frame: look.frame * density, x: win.x * density, y: win.y * density, w: win.w * density, h: win.h * density, samples });
+  scene.remove(group);
+  return { ...win, pixels };
+}
+
+// ---------------------------------------------------------------- modes
+const params = new URLSearchParams(location.search);
+const specOf = (name) => { const spec = cursors.find((c) => c.name === name); if (!spec) throw new Error(`Unknown cursor ${name}`); return spec; };
+
+window.cursorLab = {
+  gpu,
+  async bake(name) {
+    const spec = specOf(name);
+    const images = {};
+    let win;
+    const scales = {};
+    for (const density of densities) {
+      const scale = density * Math.max(1, Math.ceil(look.supersample / density));
+      win = await render(spec, scale, density === 1 ? "1x" : "hd");
+      images[density] = toBase64(win.pixels);
+      scales[density] = scale;
+    }
+    return { name, width: win.w, height: win.h, hotspot: win.hotspot, images, scales };
+  },
+};
+
+const status = document.querySelector("#status");
+status.textContent = `GPU: ${gpu.renderer}. Float targets: ${gpu.floatTargets ? "yes" : "no"}.`;
+
+if (params.has("bake")) {
+  window.cursorLab.ready = true;
+} else {
+  await sheet();
+  window.cursorLab.ready = true;
+  window.cursorLab.sheetReady = true;
+}
+
+async function loaded(src) {
+  const img = new Image();
+  img.src = src;
+  try { await img.decode(); return img; } catch { return null; }
+}
+
+async function sheet() {
+  const rows = document.querySelector("#rows");
+  const studioDensity = 12;
+  for (const spec of cursors) {
+    const row = document.createElement("article");
+    row.className = "row";
+    const files = await Promise.all(densities.map((d) => loaded(`/cursors/${fileName(spec.name, d)}?v=${Date.now()}`)));
+    const sizes = await Promise.all(densities.map((d) => fetch(`/cursors/${fileName(spec.name, d)}`).then((r) => (r.ok ? r.blob() : null)).then((b) => (b ? (b.size / 1024).toFixed(1) : "–"))));
+    const win = await frameFor(spec);
+    const heading = document.createElement("h2");
+    heading.innerHTML = `${spec.name}<small>${spec.token} · ${win.w}×${win.h} CSS px · hotspot ${win.hotspot.join(" ")} · ${sizes.join(" / ")} KB</small>`;
+    row.append(heading);
+
+    const tiles = document.createElement("div");
+    tiles.className = "tiles";
+    for (const tone of ["bright", "light", "dark", "hero"]) {
+      const tile = document.createElement("div");
+      tile.className = `tile ${tone}`;
+      tile.style.cursor = `var(${spec.token})`;
+      files.forEach((img, i) => {
+        if (!img) return;
+        const copy = img.cloneNode();
+        copy.style.width = `${img.naturalWidth / densities[i]}px`;
+        tile.append(copy);
+      });
+      if (files.every((f) => !f)) tile.innerHTML = '<span class="missing">Not baked yet</span>';
+      tiles.append(tile);
+    }
+    row.append(tiles);
+
+    const zoom = document.createElement("div");
+    zoom.className = "zoom";
+    const figure = (child, caption) => { const f = document.createElement("figure"); const c = document.createElement("figcaption"); c.textContent = caption; f.append(child, c); return f; };
+    if (files[0]) { const px = files[0].cloneNode(); px.className = "px checker"; px.style.width = `${files[0].naturalWidth * 8}px`; zoom.append(figure(px, "1x file, 8× pixels")); }
+    if (files[2]) { const big = files[2].cloneNode(); big.className = "checker"; big.style.width = `${(files[2].naturalWidth / 3) * 8}px`; zoom.append(figure(big, "3x file at 8×")); }
+    const shot = await render(spec, studioDensity);
+    const canvas = document.createElement("canvas");
+    canvas.width = shot.w * studioDensity; canvas.height = shot.h * studioDensity;
+    canvas.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(shot.pixels.buffer), canvas.width, canvas.height), 0, 0);
+    canvas.style.width = `${shot.w * 8}px`;
+    canvas.className = "light";
+    zoom.append(figure(canvas, "Studio render, live"));
+    row.append(zoom);
+    rows.append(row);
+  }
+}
+</script>
+</body>
+</html>

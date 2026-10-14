@@ -1,0 +1,34 @@
+# Dependencies and build output
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+.vercel/
+
+# Local environment
+.env*
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Scratch and legacy files (old snapshots, one-off screenshots, scripts for files that no longer exist)
+.backups/
+tmp-*.png
+hero-desktop.png
+/app.js
+/styles.css
+/fix.cjs
+/fix-ds.cjs
+/fix.py
+/update_scene.js
+/update_scene.cjs
+
+# Third-party or client material, and large sources that stay local. The site ships the derived files in public/.
+assets/showreel.mp4
+assets/flable/
+assets/hero/plates/
+assets/profile.png
+public/media/hero/
+lab/cursors/source/

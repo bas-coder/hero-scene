@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hero lab</title>
+  <link rel="icon" href="data:," />
+  <style>
+    html, body { margin: 0; height: 100%; background: #050506; overflow: hidden; }
+    #stage { position: fixed; inset: 0; }
+    canvas { display: block; width: 100%; height: 100%; }
+    .hud { position: fixed; pointer-events: none; outline: 1px dashed rgba(255, 255, 255, 0.35); }
+    .hud.text { outline: none; background: rgba(255, 255, 255, 0.82); border-radius: 2px; }
+    .hud.chrome { outline-color: rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.04); }
+    .tip { position: fixed; transform: translate(-50%, -100%); padding: 8px 12px; border-radius: 10px; background: rgba(28, 28, 32, 0.72);
+      color: #fff; font: 500 14px/1.3 system-ui, sans-serif; white-space: nowrap; pointer-events: auto;
+      opacity: 0; translate: 0 6px; transition: opacity 200ms ease, translate 200ms ease; }
+    .tip.on { opacity: 1; translate: 0 0; transition-duration: 160ms; }
+    .err { position: fixed; left: 12px; bottom: 12px; color: #f66; font: 12px monospace; white-space: pre; }
+  </style>
+  <script type="importmap">
+    { "imports": { "three": "/node_modules/three/build/three.module.js", "three/examples/jsm/": "/node_modules/three/examples/jsm/" } }
+  </script>
+</head>
+<body>
+  <div id="stage"><canvas id="hero"></canvas></div>
+  <span class="tip" id="tip" role="tooltip">Open the case study ↵</span>
+  <script type="module">
+    // Hero lab: the real engine (src/hero/engine) outside Next. Params:
+    //   ?shot=flable  ?mood=base|flable  ?dressing=none|flable  ?q=low|medium|high  ?hud=0
+    //   held frames: ?intro=1.8  ?t=7.8  ?exit=1     bench: &bench=180 (median / p95 ms per frame)
+    //   isolation: ?hide=card-room,desk (objects by name)
+    import * as THREE from "three";
+    import { createHeroRenderer } from "/src/hero/engine/index.js";
+    import { stageFromBoxes } from "/src/hero/engine/framing.js";
+
+    const params = new URLSearchParams(location.search);
+    const fixed = ["intro", "t", "exit"].map((phase) => [phase, params.get(phase)]).find(([, v]) => v !== null && Number.isFinite(Number(v)));
+    const fixedFrame = fixed ? { phase: fixed[0] === "t" ? "loop" : fixed[0], time: Number(fixed[1]) } : null;
+    const lab = (window.__lab = { stats: null });
+
+    const [palette, hud] = await Promise.all([fetch("./palette.json").then((r) => r.json()), fetch("./hud.json").then((r) => r.json()).catch(() => ({}))]);
+
+    // HUD keep-out from the live site's measured boxes (nearest measured viewport, scaled to this one).
+    function stageFor(width, height) {
+      const key = Object.keys(hud).sort((a, b) => Math.abs(+a.split("x")[0] - width) - Math.abs(+b.split("x")[0] - width))[0];
+      const measured = hud[key];
+      if (!measured) return stageFromBoxes({ width, height });
+      const sx = width / measured.width;
+      const sy = height / measured.height;
+      const scale = (box) => ({ left: box.left * sx, right: box.right * sx, top: box.top * sy, bottom: box.bottom * sy });
+      drawHud(measured, sx, sy);
+      return stageFromBoxes({ width, height, hud: measured.hud.map(scale), chrome: measured.chrome.map(scale) });
+    }
+    function drawHud(measured, sx, sy) {
+      document.querySelectorAll(".hud").forEach((el) => el.remove());
+      if (params.get("hud") === "0") return;
+      const add = (box, kind) => {
+        const el = document.createElement("div");
+        el.className = `hud ${kind}`;
+        Object.assign(el.style, { left: `${box.left * sx}px`, top: `${box.top * sy}px`, width: `${(box.right - box.left) * sx}px`, height: `${(box.bottom - box.top) * sy}px` });
+        document.body.append(el);
+      };
+      measured.chrome.forEach((box) => add(box, "chrome"));
+      measured.hud.forEach((box) => add(box, "box"));
+      (measured.text ?? []).forEach((box) => add(box, "text"));
+    }
+
+    // Hover intent for the case-study tooltip: show after 80 ms, hide after a 450 ms grace (re-entry cancels).
+    const tip = document.getElementById("tip");
+    let showTimer = 0;
+    let hideTimer = 0;
+    let tipVisible = false;
+    let overTip = false;
+    tip.addEventListener("pointerenter", () => { overTip = true; clearTimeout(hideTimer); });
+    tip.addEventListener("pointerleave", () => { overTip = false; hideTimer = setTimeout(() => setTip(false), 450); });
+    function setTip(on) { tipVisible = on; tip.classList.toggle("on", on); }
+    function onKeyHover({ hovered, x, y }) {
+      tip.style.left = `${x}px`;
+      tip.style.top = `${y}px`;
+      document.body.style.cursor = hovered ? "pointer" : "";
+      if (hovered) {
+        clearTimeout(hideTimer);
+        if (!tipVisible && !showTimer) showTimer = setTimeout(() => { showTimer = 0; setTip(true); }, 80);
+      } else {
+        clearTimeout(showTimer);
+        showTimer = 0;
+        if (tipVisible && !overTip && !hideTimer) hideTimer = setTimeout(() => { hideTimer = 0; if (!overTip) setTip(false); }, 450);
+      }
+    }
+
+    try {
+      const canvas = document.getElementById("hero");
+      const engine = await createHeroRenderer(canvas, {
+        palette,
+        quality: params.get("q") ?? "high",
+        shot: params.get("shot") ?? "flable",
+        mood: params.get("mood") ?? undefined,
+        dressing: params.get("dressing") ?? undefined,
+        assetBase: "/public/",
+        fixedFrame,
+        onKeyHover,
+        onKeyClick: () => console.info("case study →"),
+      });
+      lab.engine = engine;
+      lab.timing = { created: Math.round(performance.now()) };
+      // Isolation: ?hide=card-room,desk hides objects by name (for tracking down artefacts).
+      for (const name of (params.get("hide") ?? "").split(",").filter(Boolean)) {
+        const object = engine.scene.getObjectByName(name);
+        if (object) object.visible = false;
+      }
+      // CSS pixel → the meshes under it, nearest first (name, material, parent chain), for shot.mjs --probe.
+      lab.pick = (x, y) => {
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(new THREE.Vector2((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1), engine.camera);
+        return raycaster.intersectObject(engine.scene, true).slice(0, 4).map((hit) => ({
+          mesh: hit.object.name,
+          material: hit.object.material?.name,
+          parent: hit.object.parent?.name,
+          distance: +hit.distance.toFixed(3),
+        }));
+      };
+      // World point (scene units) → CSS pixels in the current frame, for shot.mjs --probe.
+      lab.project = (x, y, z) => {
+        const v = engine.camera.position.clone().set(x, y, z).project(engine.camera);
+        return [Math.round(((v.x + 1) / 2) * innerWidth), Math.round(((1 - v.y) / 2) * innerHeight)];
+      };
+      const resize = () => engine.setStage(stageFor(innerWidth, innerHeight));
+      addEventListener("resize", resize);
+      resize();
+
+      if (fixedFrame) {
+        await engine.renderFrames(4);
+        lab.timing.firstFrames = Math.round(performance.now());
+        lab.timing.programs = engine.renderer.info.programs?.length;
+        const bench = Number(params.get("bench") ?? 0);
+        if (bench) lab.stats = await engine.bench(bench);
+        await document.fonts.ready;
+        document.documentElement.dataset.heroReady = "true";
+      } else {
+        // The page's intro clock: reveal 0 → 1 over the shot's intro, then the engine loops.
+        const start = performance.now();
+        const tick = () => {
+          const v = Math.min(1, (performance.now() - start) / 3600);
+          engine.setReveal(v);
+          if (v < 1) requestAnimationFrame(tick);
+        };
+        engine.start();
+        tick();
+        document.documentElement.dataset.heroReady = "true";
+      }
+    } catch (error) {
+      const el = document.createElement("div");
+      el.className = "err";
+      el.textContent = String(error?.stack ?? error);
+      document.body.append(el);
+      console.error(error);
+    }
+  </script>
+</body>
+</html>

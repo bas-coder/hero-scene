@@ -1,0 +1,214 @@
+{
+  "_note": "Lab iteration values. The world is black by default (unlit, empty); a shot dresses it in its own look and lights it with its mood. On port these become --scene-* tokens.",
+  "world": {
+    "void": "#030304",
+    "desk": "#101011",
+    "deskRoughness": 0.6,
+    "prop": "#0d0d0e",
+    "cup": "#121213",
+    "speckle": "#060607",
+    "pencils": [
+      "#0b0b0c",
+      "#151516"
+    ],
+    "pencilWood": "#0e0d0c",
+    "lampBody": "#111112",
+    "notebook": "#0e0d0d",
+    "pages": "#141414",
+    "phone": "#151516",
+    "coaster": "#0d0c0c",
+    "wall": "#0a0a0b",
+    "floor": "#050506",
+    "plateTint": "#ffffff",
+    "laptopShell": 0.12,
+    "graphite": "#0b0b0c",
+    "chair": "#0b0b0c",
+    "tile": "#e6e6e8",
+    "tileHalo": "#bfbfc4",
+    "tileShadow": "#050506",
+    "key": "#151517",
+    "keyGlow": "#000000"
+  },
+  "dressings": {
+    "flable": {
+      "_ref": "sample 1.jpg: white desk, white lamp, white speckled cups, tan leather notebook, silver laptop, violet room",
+      "desk": "#d9d5d1",
+      "deskRoughness": 0.52,
+      "prop": "#2a2a2c",
+      "cup": "#e6e3de",
+      "speckle": "#8b857d",
+      "pencils": [
+        "#1d1d22",
+        "#3a3a44",
+        "#8a8f99",
+        "#e8e4dc",
+        "#c9b79c",
+        "#5a4f48"
+      ],
+      "pencilWood": "#cfa77c",
+      "lampBody": "#ebe9e6",
+      "notebook": "#b48a62",
+      "pages": "#e9e2d4",
+      "phone": "#b4b7bd",
+      "coaster": "#6f4a2e",
+      "wall": "#1c0d29",
+      "floor": "#2a2140",
+      "plateTint": "#ffffff",
+      "laptopShell": 0.62,
+      "graphite": "#1d1d21",
+      "roomPlate": "media/hero/flable/room",
+      "chair": "#7a5fb8",
+      "tile": "#ffffff",
+      "tileHalo": "#dcd2fd",
+      "tileShadow": "#211046",
+      "key": "#f4f0f8",
+      "keyGlow": "#dcd2fd"
+    }
+  },
+  "laptop": {
+    "shell": 0.62,
+    "metalness": 1,
+    "roughness": 0.36,
+    "envIntensity": 1
+  },
+  "screen": {
+    "brightness": 1,
+    "off": "#050506",
+    "socket": "#16141c",
+    "dim": "#86789a"
+  },
+  "moods": {
+    "base": {
+      "lamp": {
+        "color": "#fff0df",
+        "intensity": 105,
+        "bulb": 16
+      },
+      "window": {
+        "color": "#dfe6ee",
+        "intensity": 0.35
+      },
+      "ambient": {
+        "sky": "#c9ccd1",
+        "ground": "#0a0a0a",
+        "intensity": 0.015
+      },
+      "screen": {
+        "color": "#eef1f7",
+        "intensity": 3.2
+      },
+      "practicals": {
+        "color": "#ffe2c2",
+        "intensity": 0.2
+      },
+      "env": {
+        "intensity": 0.3,
+        "lamp": 3,
+        "window": 1.2,
+        "practicals": 1.5,
+        "screen": 2,
+        "room": 0.75,
+        "roomColor": "#b9bcc2",
+        "desk": 0.6,
+        "deskColor": "#d8d6d3"
+      },
+      "grade": {
+        "exposure": 1,
+        "lift": [
+          0,
+          0,
+          0
+        ],
+        "gamma": [
+          1,
+          1,
+          1
+        ],
+        "gain": [
+          1,
+          1,
+          1
+        ],
+        "saturation": 1,
+        "vignette": 0.7,
+        "grain": 0.012,
+        "bloom": {
+          "threshold": 5,
+          "knee": 1.5,
+          "strength": 0.22
+        }
+      },
+      "sketch": {
+        "paper": "#030304",
+        "ink": "#d9d9dc",
+        "shade": "#1e1e21"
+      }
+    },
+    "flable": {
+      "lamp": {
+        "color": "#ff9ccf",
+        "intensity": 135,
+        "bulb": 16
+      },
+      "window": {
+        "color": "#8c6bff",
+        "intensity": 1.2
+      },
+      "ambient": {
+        "sky": "#8a5be0",
+        "ground": "#1a0d26",
+        "intensity": 0.015
+      },
+      "screen": {
+        "color": "#e9e6ff",
+        "intensity": 3.2
+      },
+      "practicals": {
+        "color": "#ffae7a",
+        "intensity": 0.3
+      },
+      "env": {
+        "intensity": 0.32,
+        "lamp": 3,
+        "window": 1.8,
+        "practicals": 1.8,
+        "screen": 2,
+        "room": 0.9,
+        "roomColor": "#8a6fa8",
+        "desk": 0.9,
+        "deskColor": "#d9b8ea"
+      },
+      "grade": {
+        "exposure": 1.5,
+        "lift": [
+          0.0006,
+          0,
+          0.0016
+        ],
+        "gamma": [
+          1,
+          0.97,
+          1.04
+        ],
+        "gain": [
+          1.06,
+          0.86,
+          1.12
+        ],
+        "saturation": 1.35,
+        "vignette": 0.75,
+        "grain": 0.012,
+        "bloom": {
+          "threshold": 5,
+          "knee": 1.5,
+          "strength": 0.26
+        }
+      },
+      "sketch": {
+        "paper": "#030304",
+        "ink": "#dcd2fd",
+        "shade": "#1e1b24"
+      }
+    }
+  }
+}

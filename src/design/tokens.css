@@ -1,0 +1,7 @@
+/* Public entrypoint. Edit the collections, never duplicate tokens in components. */
+@import "./primitives.css";
+@import "./responsive.css";
+@import "./theme.css";
+@import "./typography.css";
+@import "./effects.css";
+@import "./cursors.css";

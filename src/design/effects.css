@@ -1,0 +1,196 @@
+/* Hero scrim, after the Bricx hero: the left falls off for the headline, the right a little for the actions,
+   the bottom for the meta, and a light top edge for the header. Declared again on [data-hero-shot] so a shot
+   can retint it with its own shadow colour. */
+:root {
+  --hero-scrim-tint: var(--color-stone-900);
+}
+
+:root,
+[data-hero-shot] {
+  --gradient-hero-scrim:
+    linear-gradient(90deg, color-mix(in srgb, var(--hero-scrim-tint) 76%, transparent) 0%, color-mix(in srgb, var(--hero-scrim-tint) 30%, transparent) 38%, transparent 67%),
+    linear-gradient(270deg, color-mix(in srgb, var(--hero-scrim-tint) 44%, transparent) 0%, color-mix(in srgb, var(--hero-scrim-tint) 14%, transparent) 20%, transparent 36%),
+    linear-gradient(180deg, color-mix(in srgb, var(--hero-scrim-tint) 52%, transparent) 0%, transparent 16%),
+    linear-gradient(0deg, color-mix(in srgb, var(--hero-scrim-tint) 78%, transparent) 0%, color-mix(in srgb, var(--hero-scrim-tint) 42%, transparent) 22%, transparent 48%);
+  /* The headline's own shade: a soft pool of the shot's shadow behind the text, so every line (the name line sits
+     over the desk) reads wherever the scene puts light behind it. */
+  --hero-copy-shade: color-mix(in srgb, var(--hero-scrim-tint) 62%, transparent);
+  --gradient-hero-scrim-mobile:
+    linear-gradient(0deg, color-mix(in srgb, var(--hero-scrim-tint) 90%, transparent) 0%, color-mix(in srgb, var(--hero-scrim-tint) 58%, transparent) 57%, color-mix(in srgb, var(--hero-scrim-tint) 14%, transparent) 100%),
+    linear-gradient(90deg, color-mix(in srgb, var(--hero-scrim-tint) 50%, transparent), transparent 76%);
+}
+
+[data-hero-shot="flable"] {
+  --hero-scrim-tint: var(--scene-flable-shadow);
+  /* The canvas fades in over this, so it matches the intro's first frame: lid shut, dusk in the cove. */
+  --gradient-hero-dusk: radial-gradient(ellipse 60% 55% at 64% 44%, var(--scene-flable-cove-low), var(--scene-flable-shadow) 62%, var(--scene-flable-deep));
+}
+
+/* Gradients and shadows, built from theme colors */
+:root,
+[data-theme="light"] {
+  --gradient-page-wash: radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--color-amber-400) var(--alpha-9), transparent), transparent 22rem);
+  --gradient-ink-wash:
+    linear-gradient(120deg, color-mix(in srgb, var(--color-cobalt-500) 76%, transparent), transparent 42%),
+    linear-gradient(300deg, color-mix(in srgb, var(--color-amber-400) 82%, transparent), transparent 46%);
+  --gradient-night-glow:
+    radial-gradient(circle at 25% 20%, color-mix(in srgb, var(--color-cobalt-500) 80%, transparent), transparent 24%),
+    radial-gradient(circle at 82% 80%, color-mix(in srgb, var(--color-coral-500) 75%, transparent), transparent 28%);
+  --gradient-closing-glow:
+    radial-gradient(circle at 72% 22%, color-mix(in srgb, var(--color-cobalt-500) 70%, transparent), transparent 32%),
+    radial-gradient(circle at 95% 90%, color-mix(in srgb, var(--color-amber-400) 44%, transparent), transparent 24%);
+  --gradient-grid:
+    repeating-linear-gradient(90deg, transparent 0 var(--scale-32), color-mix(in srgb, var(--color-stone-900) var(--alpha-8), transparent) calc(var(--scale-32) + var(--scale-4))),
+    repeating-linear-gradient(0deg, transparent 0 var(--scale-32), color-mix(in srgb, var(--color-stone-900) var(--alpha-8), transparent) calc(var(--scale-32) + var(--scale-4))),
+    var(--surface-sunken);
+  --surface-night: var(--color-stone-900);
+  --surface-night-copy: var(--color-stone-50);
+  --line-inverse-soft: color-mix(in srgb, var(--text-inverse) var(--alpha-24), transparent);
+  --line-inverse-strong: color-mix(in srgb, var(--text-inverse) var(--alpha-50), transparent);
+  --surface-overlay: color-mix(in srgb, var(--color-stone-900) var(--alpha-74), transparent);
+  --surface-overlay-strong: color-mix(in srgb, var(--color-stone-900) var(--alpha-78), transparent);
+  --surface-overlay-solid: color-mix(in srgb, var(--color-stone-900) var(--alpha-92), transparent);
+  --text-inverse-faint: color-mix(in srgb, var(--text-inverse) var(--alpha-70), transparent);
+  --gradient-divider: linear-gradient(90deg, transparent 0%, var(--line-inverse) var(--alpha-fade, 20%), var(--line-inverse) calc(100% - var(--alpha-fade, 20%)), transparent 100%);
+
+  --shadow-float: 0 var(--scale-8) var(--scale-24) color-mix(in srgb, var(--color-stone-900) var(--alpha-18), transparent);
+  --shadow-menu: 0 var(--scale-12) var(--scale-32) color-mix(in srgb, var(--color-stone-900) var(--alpha-28), transparent);
+
+}
+
+/* Liquid glass. Refraction, depth, dispersion, and splay are stored for the system; the browser paints fill, blur, and a highlight. */
+:root {
+  --glass-card-angle: -131deg;
+  --glass-card-intensity: 100%;
+  --glass-card-refraction: 66;
+  --glass-card-depth: 67;
+  --glass-card-dispersion: 67;
+  --glass-card-frost: 37;
+  --glass-card-splay: 0;
+  --glass-card-fill: color-mix(in srgb, var(--surface-bright) 55%, transparent);
+  --glass-card-blur: calc(var(--scale-16) + var(--scale-4));
+  --glass-card-highlight: linear-gradient(var(--glass-card-angle), color-mix(in srgb, var(--surface-bright) var(--glass-card-intensity), transparent), transparent 60%);
+
+  --glass-elevated-angle: -45deg;
+  --glass-elevated-intensity: 25%;
+  --glass-elevated-refraction: 100;
+  --glass-elevated-depth: 64;
+  --glass-elevated-dispersion: 56;
+  --glass-elevated-frost: 25;
+  --glass-elevated-splay: 0;
+  --glass-elevated-fill: color-mix(in srgb, var(--surface-bright) 72%, transparent);
+  --glass-elevated-blur: var(--scale-24);
+  --glass-elevated-highlight: linear-gradient(var(--glass-elevated-angle), color-mix(in srgb, var(--surface-bright) var(--glass-elevated-intensity), transparent), transparent 55%);
+
+  --glass-icon-angle: -26deg;
+  --glass-icon-intensity: 100%;
+  --glass-icon-refraction: 92;
+  --glass-icon-depth: 84;
+  --glass-icon-dispersion: 42;
+  --glass-icon-frost: 0;
+  --glass-icon-splay: 0;
+  /* HUD glass over artwork: the same dark tint in both themes (Bricx reference). */
+  --glass-icon-fill: color-mix(in srgb, var(--color-stone-900) var(--alpha-25), transparent);
+  --glass-icon-fill-hover: color-mix(in srgb, var(--color-stone-900) var(--alpha-40), transparent);
+  --glass-icon-blur: var(--scale-12);
+  --glass-icon-backdrop: blur(var(--glass-icon-blur));
+  --glass-icon-backdrop-hover: var(--glass-icon-backdrop);
+  --shadow-glass-icon: 0 var(--scale-1) var(--scale-1) color-mix(in srgb, var(--color-stone-900) var(--alpha-3), transparent);
+
+  /* Light HUD glass: the fixed header over light page sections, with dark ink. 90% white over a plain blur, so the
+     page frosts through instead of being blown out to flat white; hover firms it up to solid. */
+  --glass-light-fill: color-mix(in srgb, var(--color-stone-50) var(--alpha-90), transparent);
+  --glass-light-fill-hover: var(--color-stone-50);
+  --glass-light-backdrop: blur(var(--glass-icon-blur));
+  --glass-light-backdrop-hover: var(--glass-light-backdrop);
+  --glass-light-ink: var(--color-stone-900);
+  --glass-icon-highlight: linear-gradient(var(--glass-icon-angle), color-mix(in srgb, var(--text-inverse) var(--alpha-16), transparent), transparent 62%);
+}
+
+.glass-card,
+.glass-elevated,
+.glass-icon {
+  border: 0;
+  background: var(--glass-icon-fill);
+  -webkit-backdrop-filter: blur(var(--glass-icon-blur));
+  backdrop-filter: blur(var(--glass-icon-blur));
+}
+
+.glass-card {
+  background: var(--glass-card-highlight), var(--glass-card-fill);
+  -webkit-backdrop-filter: blur(var(--glass-card-blur));
+  backdrop-filter: blur(var(--glass-card-blur));
+  box-shadow: inset 0 0 0 var(--border-hairline) var(--line-default), var(--shadow-float);
+}
+
+.glass-elevated {
+  background: var(--glass-elevated-highlight), var(--glass-elevated-fill);
+  -webkit-backdrop-filter: blur(var(--glass-elevated-blur));
+  backdrop-filter: blur(var(--glass-elevated-blur));
+  box-shadow: var(--shadow-float);
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--layout-columns), minmax(0, 1fr));
+  gap: var(--layout-gutter);
+  width: min(var(--layout-content), 100%);
+  margin-inline: auto;
+  padding-inline: var(--layout-margin);
+}
+
+
+/* Motion and additional reusable effects. */
+:root {
+  --duration-550: 0.55s;
+  --duration-400: 0.4s;
+  --duration-450: 0.45s;
+  --duration-100: 0.1s;
+  --duration-1200: 1.2s;
+  --duration-800: 0.8s;
+  --duration-700: 0.7s;
+  --duration-600: 0.6s;
+  --duration-350: 0.35s;
+  --duration-200: 0.2s;
+  --duration-2000: 2s;
+
+  /* Tooltip: dark glass from the HUD family, denser so it reads over light sections (Bricx reference). */
+  --tooltip-fill: color-mix(in srgb, var(--color-stone-900) var(--alpha-70), transparent);
+  --tooltip-line: color-mix(in srgb, var(--color-stone-50) var(--alpha-8), transparent);
+  --tooltip-ink: var(--color-stone-50);
+  --tooltip-ink-muted: color-mix(in srgb, var(--color-stone-50) var(--alpha-60), transparent);
+  --tooltip-ink-soft: color-mix(in srgb, var(--color-stone-50) var(--alpha-80), transparent);
+  --tooltip-chip-fill: color-mix(in srgb, var(--color-stone-50) var(--alpha-10), transparent);
+  --tooltip-icon-fill: var(--color-stone-50);
+  --tooltip-icon-ink: var(--color-stone-900);
+  --tooltip-blur: var(--glass-icon-blur);
+  --shadow-tooltip: 0 var(--scale-10) calc(var(--scale-14) + var(--scale-1)) calc(var(--scale-1) * -3) color-mix(in srgb, var(--color-stone-900) var(--alpha-10), transparent), 0 var(--scale-4) var(--scale-6) calc(var(--scale-4) * -1) color-mix(in srgb, var(--color-stone-900) var(--alpha-10), transparent);
+  --shadow-window: var(--space-16) var(--space-16) 0 var(--line-emphasis);
+  --blur-background: var(--scale-8);
+  --blur-backdrop: var(--scale-24);
+}
+
+.glass-icon { background: var(--glass-icon-highlight), var(--glass-icon-fill); }
+.blur-background { filter: blur(var(--blur-background)); }
+.blur-backdrop { -webkit-backdrop-filter: blur(var(--blur-backdrop)); backdrop-filter: blur(var(--blur-backdrop)); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-card, .glass-elevated, .glass-icon { background: var(--surface-bright); }
+}
+
+/* Exact Design Minis bevel and travel recipe, using shared tokens. Declared on .keycap too, so each key builds its
+   gradients from the palette it inherits and a context (the hero) can repaint it. */
+:root, [data-theme], .keycap {
+  --gradient-keycap-shell: linear-gradient(var(--action-keycap-shell-start), var(--action-keycap-shell-end));
+  --gradient-keycap-face: linear-gradient(90deg, var(--action-keycap-face-start), var(--action-keycap-face-end));
+  --shadow-keycap-rest: inset calc(var(--keycap-unit-6) * -1) 0 var(--keycap-unit-6) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-38), transparent), inset 0 calc(var(--keycap-unit-6) * -1) var(--keycap-unit-6) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-64), transparent), 0 0 0 var(--keycap-outline-width) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-191), transparent), var(--keycap-unit-6) var(--keycap-unit-12) var(--keycap-unit-16) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-71), transparent);
+  --shadow-keycap-face-rest: calc(var(--keycap-unit-10) * -1) calc(var(--keycap-unit-10) * -1) var(--keycap-unit-10) color-mix(in srgb, var(--action-keycap-highlight) var(--keycap-alpha-64), transparent), var(--keycap-unit-10) var(--keycap-unit-5) var(--keycap-unit-10) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-38), transparent);
+  --shadow-keycap-hover: inset calc(var(--keycap-unit-4) * -1) 0 var(--keycap-unit-4) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-31), transparent), inset 0 calc(var(--keycap-unit-4) * -1) var(--keycap-unit-4) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-51), transparent), 0 0 0 var(--keycap-outline-width) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-166), transparent), var(--keycap-unit-4) var(--keycap-unit-9) var(--keycap-unit-13) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-64), transparent);
+  --shadow-keycap-face-hover: calc(var(--keycap-unit-7) * -1) calc(var(--keycap-unit-7) * -1) var(--keycap-unit-7) color-mix(in srgb, var(--action-keycap-highlight) var(--keycap-alpha-51), transparent), var(--keycap-unit-7) var(--keycap-unit-4) var(--keycap-unit-7) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-31), transparent);
+  --shadow-keycap-press: inset calc(var(--keycap-unit-3) * -1) 0 var(--keycap-unit-3) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-26), transparent), inset 0 calc(var(--keycap-unit-3) * -1) var(--keycap-unit-3) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-38), transparent), 0 0 0 var(--keycap-outline-width) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-128), transparent), var(--keycap-unit-3) var(--keycap-unit-6) var(--keycap-unit-10) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-56), transparent);
+  --shadow-keycap-face-press: calc(var(--keycap-unit-5) * -1) calc(var(--keycap-unit-5) * -1) var(--keycap-unit-5) color-mix(in srgb, var(--action-keycap-highlight) var(--keycap-alpha-38), transparent), var(--keycap-unit-5) var(--keycap-unit-3) var(--keycap-unit-5) color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-26), transparent);
+}
+
+/* Masks read only alpha: an opaque stop shows what is under it, a clear one hides it. */
+:root {
+  --mask-solid: black;
+}

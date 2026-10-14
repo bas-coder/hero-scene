@@ -1,0 +1,307 @@
+/* Theme / light */
+:root,
+[data-theme="light"] {
+  --surface-canvas: var(--color-stone-100);
+  --surface-bright: var(--color-stone-50);
+  --surface-raised: var(--color-stone-200);
+  --surface-sunken: var(--color-stone-300);
+  --surface-inverse: var(--color-stone-900);
+  --surface-glass: color-mix(in srgb, var(--color-stone-900) var(--alpha-10), transparent);
+  /* Logo tiles sit at the reference's contrast levels: the page white mixed with ink at 2% (tile), 6% (hover, outline) and 60% (text). */
+  --surface-tile: color-mix(in srgb, var(--text-heading) var(--alpha-2), var(--surface-bright));
+  --surface-tile-hover: color-mix(in srgb, var(--text-heading) var(--alpha-6), var(--surface-bright));
+  --line-tile: color-mix(in srgb, var(--text-heading) var(--alpha-6), var(--surface-bright));
+  --text-tile: color-mix(in srgb, var(--text-heading) var(--alpha-60), var(--surface-bright));
+
+  --line-default: var(--color-stone-300);
+  --line-strong: var(--color-stone-700);
+  --line-inverse: color-mix(in srgb, var(--color-stone-50) var(--alpha-28), transparent);
+  --line-focus: var(--color-cobalt-500);
+
+  --action-primary: var(--color-stone-900);
+  --action-primary-hover: var(--color-stone-800);
+  --action-primary-press: var(--color-stone-700);
+  --action-on-primary: var(--color-stone-50);
+  --action-accent: var(--color-red-500);
+
+  --state-success: var(--color-green-500);
+  --state-success-surface: var(--color-green-50);
+
+  --text-heading: var(--color-stone-900);
+  --text-body: var(--color-stone-800);
+  --text-muted: var(--color-stone-600);
+  --text-inverse: var(--color-stone-50);
+  --text-inverse-muted: color-mix(in srgb, var(--color-stone-50) var(--alpha-62), transparent);
+  --text-inverse-soft: color-mix(in srgb, var(--color-stone-50) var(--alpha-72), transparent);
+  --text-accent: var(--color-red-600);
+  /* Statement scroll fill (cr8ivelarry.live): each letter runs from a half-clear grey to full ink. */
+  --text-statement-start: color-mix(in srgb, var(--text-muted) var(--alpha-50), transparent);
+  --text-statement-end: var(--text-heading);
+  /* action studios wordmark: lit to ink under the cursor; a faint ghost when motion is reduced. */
+  --text-wordmark: var(--text-heading);
+  --text-wordmark-ghost: color-mix(in srgb, var(--text-heading) var(--alpha-6), var(--surface-bright));
+
+  --icon-heading: var(--text-heading);
+  --icon-body: var(--text-body);
+  --icon-muted: var(--text-muted);
+  --icon-inverse: var(--text-inverse);
+  --icon-accent: var(--text-accent);
+  /* Client logos keep their grey tones, as on the reference; Dark inverts them. A logo drawn for dark
+     backgrounds (white lettering) flips the other way, so its type stays dark on light tiles. */
+  --icon-logo-filter: grayscale(1);
+  --icon-logo-filter-on-dark: grayscale(1) invert(1);
+
+  --scene-paper: var(--color-stone-100);
+  --scene-ink: var(--color-stone-900);
+  --scene-shade: var(--color-stone-500);
+  --scene-white: var(--color-stone-50);
+  --scene-green: var(--color-green-500);
+  --scene-cobalt: var(--color-cobalt-500);
+  --scene-cobalt-deep: var(--color-cobalt-800);
+  --scene-cobalt-mid: var(--color-cobalt-600);
+  --scene-cobalt-bright: var(--color-cobalt-400);
+  --scene-mist: var(--color-cobalt-300);
+  --scene-amber: var(--color-amber-300);
+  --scene-sun: var(--color-amber-400);
+  --scene-coral: var(--color-coral-400);
+  --scene-coral-deep: var(--color-coral-500);
+  --scene-plaster: var(--color-plaster-300);
+  --scene-plaster-edge: var(--color-plaster-700);
+  --scene-wood: var(--color-wood-400);
+  --scene-wood-top: var(--color-wood-300);
+  --scene-wood-drawer: var(--color-wood-500);
+  --scene-wood-cane: var(--color-wood-600);
+  --scene-wood-line: var(--color-wood-800);
+  --scene-metal: var(--color-metal-400);
+  --scene-metal-lid: var(--color-metal-500);
+  --scene-metal-deck: var(--color-metal-600);
+  --scene-metal-ink: var(--color-metal-800);
+  --scene-vase: var(--color-metal-700);
+  --scene-stem: var(--color-stem-500);
+  --scene-blossom: var(--color-blossom-300);
+  --scene-blossom-deep: var(--color-blossom-500);
+  --scene-screen-ink: var(--color-cobalt-900);
+  --scene-screen-title: var(--color-screen-800);
+  --scene-screen-label: var(--color-screen-500);
+  --scene-screen-copy: var(--color-screen-400);
+  --scene-screen-card: var(--color-screen-50);
+  --scene-screen-panel: var(--color-screen-700);
+  --scene-screen-rule: var(--color-screen-300);
+  --scene-screen-sheet: var(--color-screen-sheet);
+  --scene-screen-muted: var(--color-stone-400);
+  --scene-pure: var(--color-white);
+  --scene-light-fill: var(--color-light-fill);
+  --scene-light-key: var(--color-light-key);
+  --scene-light-rim: var(--color-light-rim);
+  --scene-hatch: var(--color-hatch-700);
+  /* Cursors, baked by `npm run cursors`: satin face, lacquer body, and a warm shadow tint (pure black reads violet on stone). */
+  --scene-cursor-face: var(--color-stone-50);
+  --scene-cursor-body: var(--color-stone-900);
+  --scene-cursor-shadow: var(--color-stone-700);
+
+  /* Flable shot: Flable's own UI turned into a lilac cove at sunrise. Plum is the Orion card's ink and carries the HUD falloff. */
+  --scene-flable-cove-high: var(--color-rose-200);
+  --scene-flable-cove-mid: var(--color-lilac-400);
+  --scene-flable-cove-low: var(--color-plum-600);
+  --scene-flable-shadow: var(--color-plum-800);
+  --scene-flable-deep: var(--color-plum-900);
+  --scene-flable-halo: var(--color-lilac-200);
+  --scene-flable-sky: var(--color-lilac-300);
+  --scene-flable-sun: var(--color-sun-200);
+  --scene-flable-sun-rim: var(--color-sun-400);
+  --scene-flable-glow: var(--color-lilac-100);
+  --scene-flable-mark-top-from: var(--color-flable-pink);
+  --scene-flable-mark-top-to: var(--color-flable-magenta);
+  --scene-flable-mark-mid-from: var(--color-flable-purple);
+  --scene-flable-mark-mid-to: var(--color-flable-indigo);
+  --scene-flable-mark-tail-from: var(--color-flable-blue);
+  --scene-flable-mark-tail-to: var(--color-flable-cyan);
+  --scene-flable-ceramic: var(--color-stone-50);
+  --scene-flable-coffee: var(--color-wood-700);
+  --scene-flable-crema: var(--color-wood-200);
+  --scene-flable-vase: var(--color-plum-700);
+  --scene-flable-pampas: var(--color-sun-100);
+  --scene-flable-pampas-tip: var(--color-rose-300);
+  --scene-flable-stem: var(--color-sun-700);
+  --scene-flable-steam: var(--color-white);
+  --scene-flable-ink: var(--color-cobalt-800);
+  --scene-flable-paper: var(--color-stone-100);
+  --scene-flable-socket: var(--color-lilac-50);
+  --scene-flable-tile: var(--color-white);
+  --scene-device-anodized: var(--color-metal-200);
+  --scene-device-deck: var(--color-metal-300);
+  --scene-device-key: var(--color-metal-900);
+  --scene-device-bezel: var(--color-metal-900);
+  --scene-device-glass-off: var(--color-metal-800);
+  --scene-screen-menubar: var(--color-screen-50);
+
+  /* Night desk (shot 01, round 2): before sunrise, a white desk in a violet room, a warm lamp, a pink LED shelf. */
+  --scene-night-wall: var(--color-plum-800);
+  --scene-night-wall-lit: var(--color-plum-500);
+  --scene-night-sky: var(--color-lilac-700);
+  --scene-night-ground: var(--color-plum-900);
+  --scene-night-led: var(--color-rose-400);
+  --scene-night-led-warm: var(--color-sun-300);
+  --scene-night-halo: var(--color-lilac-500);
+  --scene-night-lamp: var(--color-sun-100);
+  --scene-night-lamp-warm: var(--color-sun-200);
+  --scene-night-desk: var(--color-lilac-50);
+  --scene-night-ceramic: var(--color-stone-50);
+  --scene-night-pencil: var(--color-metal-700);
+  --scene-night-pencil-wood: var(--color-wood-100);
+  --scene-night-notebook: var(--color-wood-400);
+  --scene-night-phone: var(--color-metal-900);
+  --scene-night-plant: var(--color-plum-900);
+  --scene-night-curtain: var(--color-lilac-500);
+  --scene-night-window: var(--color-lilac-300);
+  --scene-night-bokeh: var(--color-sun-300);
+  --scene-night-bokeh-cool: var(--color-rose-300);
+  --scene-night-key: var(--color-white);
+  --scene-night-key-glow: var(--color-lilac-200);
+
+  /* Drawn to Real: the whole shot starts as lilac ink on night paper, so the white HUD reads throughout. */
+  --scene-sketch-paper: var(--color-plum-900);
+  --scene-sketch-ink: var(--color-lilac-200);
+  --scene-sketch-shade: var(--color-plum-600);
+}
+
+[data-theme="dark"] {
+  --surface-canvas: var(--color-stone-900);
+  --surface-bright: var(--color-stone-800);
+  --surface-raised: var(--color-stone-800);
+  --surface-sunken: var(--color-stone-700);
+  --surface-inverse: var(--color-stone-50);
+  --surface-glass: color-mix(in srgb, var(--color-stone-50) var(--alpha-10), transparent);
+  /* Logo tiles sit at the reference's contrast levels: the page white mixed with ink at 2% (tile), 6% (hover, outline) and 60% (text). */
+  --surface-tile: color-mix(in srgb, var(--text-heading) var(--alpha-2), var(--surface-bright));
+  --surface-tile-hover: color-mix(in srgb, var(--text-heading) var(--alpha-6), var(--surface-bright));
+  --line-tile: color-mix(in srgb, var(--text-heading) var(--alpha-6), var(--surface-bright));
+  --text-tile: color-mix(in srgb, var(--text-heading) var(--alpha-60), var(--surface-bright));
+
+  --line-default: var(--color-stone-700);
+  --line-strong: var(--color-stone-400);
+  --line-inverse: color-mix(in srgb, var(--color-stone-900) var(--alpha-28), transparent);
+  --line-focus: var(--color-cobalt-300);
+
+  --action-primary: var(--color-stone-50);
+  --action-primary-hover: var(--color-stone-200);
+  --action-primary-press: var(--color-stone-300);
+  --action-on-primary: var(--color-stone-900);
+  --action-accent: var(--color-red-400);
+
+  --state-success: var(--color-green-400);
+  --state-success-surface: var(--color-green-900);
+
+  --text-heading: var(--color-stone-50);
+  --text-body: var(--color-stone-200);
+  --text-muted: var(--color-stone-400);
+  --text-inverse: var(--color-stone-900);
+  --text-inverse-muted: color-mix(in srgb, var(--color-stone-900) var(--alpha-62), transparent);
+  --text-inverse-soft: color-mix(in srgb, var(--color-stone-900) var(--alpha-72), transparent);
+  --text-accent: var(--color-red-400);
+  --text-statement-start: color-mix(in srgb, var(--text-muted) var(--alpha-50), transparent);
+  --text-statement-end: var(--text-heading);
+  --text-wordmark: var(--text-heading);
+  --text-wordmark-ghost: color-mix(in srgb, var(--text-heading) var(--alpha-6), var(--surface-bright));
+
+  --icon-heading: var(--text-heading);
+  --icon-body: var(--text-body);
+  --icon-muted: var(--text-muted);
+  --icon-inverse: var(--text-inverse);
+  --icon-accent: var(--text-accent);
+  --icon-logo-filter: grayscale(1) invert(1);
+  --icon-logo-filter-on-dark: grayscale(1);
+}
+
+
+:root, [data-theme="light"] {
+  color-scheme: light;
+  --state-warning: var(--color-amber-700);
+  --state-warning-surface: var(--color-amber-50);
+  --state-error: var(--color-coral-700);
+  --state-error-surface: var(--color-coral-50);
+  --state-info: var(--color-cobalt-700);
+  --state-info-surface: var(--color-cobalt-50);
+  --action-disabled: var(--color-stone-200);
+  --action-on-disabled: var(--color-stone-600);
+  --line-disabled: var(--color-stone-300);
+  --icon-disabled: var(--color-stone-400);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --state-warning: var(--color-amber-200);
+  --state-warning-surface: var(--color-amber-900);
+  --state-error: var(--color-coral-200);
+  --state-error-surface: var(--color-coral-900);
+  --state-info: var(--color-cobalt-200);
+  --state-info-surface: var(--color-cobalt-900);
+  --action-disabled: var(--color-stone-700);
+  --action-on-disabled: var(--color-stone-400);
+  --line-disabled: var(--color-stone-700);
+  --icon-disabled: var(--color-stone-600);
+}
+
+:root {
+  --surface-artwork: var(--color-stone-900);
+  --text-on-artwork: var(--color-stone-50);
+  --surface-highlight: var(--color-stone-50);
+  --icon-on-artwork: var(--color-stone-50);
+  --line-artwork: color-mix(in srgb, var(--text-on-artwork) var(--alpha-28), transparent);
+  /* The primary keycap over artwork: white in both themes (the Dark palette, pinned). */
+  --action-keycap-artwork-shell-start: var(--color-stone-200);
+  --action-keycap-artwork-shell-end: var(--color-stone-300);
+  --action-keycap-artwork-face-start: var(--color-stone-50);
+  --action-keycap-artwork-face-end: var(--color-stone-100);
+  --action-keycap-artwork-label: var(--color-stone-900);
+}
+
+:root { --scene-plaster-grain: var(--color-plaster-400); }
+
+/* Code: a fixed dark sheet in both themes, like artwork, so syntax colours keep one tested contrast. */
+:root {
+  --code-surface: var(--color-stone-800);
+  --code-surface-raised: var(--color-stone-700);
+  --code-line: var(--color-stone-600);
+  --code-text: var(--color-stone-100);
+  --code-muted: var(--color-stone-500);
+  --code-punctuation: var(--color-stone-400);
+  --code-keyword: var(--color-cobalt-200);
+  --code-string: var(--color-green-300);
+  --code-function: var(--color-amber-300);
+  --code-constant: var(--color-coral-300);
+  --code-parameter: var(--color-blossom-200);
+}
+
+:root, [data-theme="light"] { --line-emphasis: var(--color-stone-900); }
+[data-theme="dark"] { --line-emphasis: var(--color-stone-50); }
+
+/* Dedicated primary keycap palette: faithful charcoal in Light, stone in Dark. */
+:root, [data-theme="light"] {
+  --action-keycap-shell-start: var(--color-keycap-700);
+  --action-keycap-shell-end: var(--color-keycap-900);
+  --action-keycap-face-start: var(--color-keycap-800);
+  --action-keycap-face-end: var(--color-keycap-500);
+  --action-keycap-label: var(--color-keycap-100);
+}
+[data-theme="dark"] {
+  --action-keycap-shell-start: var(--color-stone-200);
+  --action-keycap-shell-end: var(--color-stone-300);
+  --action-keycap-face-start: var(--color-stone-50);
+  --action-keycap-face-end: var(--color-stone-100);
+  --action-keycap-label: var(--color-stone-900);
+}
+:root, [data-theme] {
+  --action-keycap-shadow: var(--color-keycap-shadow);
+  --action-keycap-highlight: var(--color-white);
+  --line-keycap-top: color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-153), transparent);
+  --line-keycap-side: color-mix(in srgb, var(--action-keycap-shadow) var(--keycap-alpha-68), transparent);
+}
+
+/* The current view's header pill: the red accent, the same in both themes because the HUD sits over artwork.
+   Red-600, not the 500 accent: white 14px labels pass AA at 5.0:1 here and fail at 4.1:1 on red-500. */
+:root, [data-theme] {
+  --action-current: var(--color-red-600);
+  --action-current-hover: var(--color-red-700);
+  --action-on-current: var(--color-stone-50);
+}

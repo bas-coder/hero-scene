@@ -1,0 +1,379 @@
+/* Primitives, responsive modes, and theme. Components use the theme, text, glass, shadow, and responsive tokens only. */
+
+:root {
+  /* Color / stone */
+  --color-stone-50: #fffdf8;
+  --color-stone-100: #f7f5ef;
+  --color-stone-200: #e7e1d6;
+  --color-stone-300: #cfc9bd;
+  --color-stone-400: #a39e93;
+  --color-stone-500: #8d877e;
+  --color-stone-600: #46433e;
+  --color-stone-700: #2c2a27;
+  --color-stone-800: #202020;
+  --color-stone-900: #0b0b0b;
+
+  /* Color / green */
+  --color-green-50: #e7f9ee;
+  --color-green-100: #c8f3d8;
+  --color-green-200: #96e8b8;
+  --color-green-300: #62dc94;
+  --color-green-400: #4ad47e;
+  --color-green-500: #3dce6e;
+  --color-green-600: #2eaa58;
+  --color-green-700: #228244;
+  --color-green-800: #175c30;
+  --color-green-900: #0c3a1e;
+
+  /* Color / cobalt */
+  --color-cobalt-50: #eef3fc;
+  --color-cobalt-100: #d4e1f8;
+  --color-cobalt-200: #a9c3f1;
+  --color-cobalt-300: #58c8dd;
+  --color-cobalt-400: #4f78ed;
+  --color-cobalt-500: #2c60d7;
+  --color-cobalt-600: #2264d7;
+  --color-cobalt-700: #1b3d88;
+  --color-cobalt-800: #10284f;
+  --color-cobalt-900: #0c1628;
+
+  /* Color / amber */
+  --color-amber-50: #fbf6e6;
+  --color-amber-100: #f6e8c0;
+  --color-amber-200: #f0d48a;
+  --color-amber-300: #f7c94a;
+  --color-amber-400: #e8bb43;
+  --color-amber-500: #d4a42e;
+  --color-amber-600: #b08622;
+  --color-amber-700: #866618;
+  --color-amber-800: #5c4610;
+  --color-amber-900: #332708;
+
+  /* Color / coral */
+  --color-coral-50: #fdeeea;
+  --color-coral-100: #fad4cc;
+  --color-coral-200: #f4aa9c;
+  --color-coral-300: #ee8574;
+  --color-coral-400: #ea6f57;
+  --color-coral-500: #e97056;
+  --color-coral-600: #c4543e;
+  --color-coral-700: #943f2e;
+  --color-coral-800: #642b1f;
+  --color-coral-900: #3a1912;
+
+  /* Color / red (brand) */
+  --color-red-50: #fef2f1;
+  --color-red-100: #fde3e1;
+  --color-red-200: #fbc2be;
+  --color-red-300: #f89993;
+  --color-red-400: #f3635a;
+  --color-red-500: #ed3327;
+  --color-red-600: #d62318;
+  --color-red-700: #b31a11;
+  --color-red-800: #941810;
+  --color-red-900: #7b1a13;
+
+  /* Color / plaster, wood, metal, blossom: scene ramps */
+  --color-plaster-50: #f3eadc;
+  --color-plaster-100: #e6d7c2;
+  --color-plaster-200: #d9c6ab;
+  --color-plaster-300: #c9b79a;
+  --color-plaster-400: #b5a184;
+  --color-plaster-500: #9a866c;
+  --color-plaster-600: #7d6b55;
+  --color-plaster-700: #6d6254;
+  --color-plaster-800: #4a433a;
+  --color-plaster-900: #2c2722;
+
+  --color-wood-50: #f0d7bc;
+  --color-wood-100: #e0b892;
+  --color-wood-200: #c4895a;
+  --color-wood-300: #a56b3e;
+  --color-wood-400: #8d5a34;
+  --color-wood-500: #7a4e30;
+  --color-wood-600: #6b4228;
+  --color-wood-700: #4e301c;
+  --color-wood-800: #3a2416;
+  --color-wood-900: #24160d;
+
+  --color-metal-50: #f4f5f6;
+  --color-metal-100: #d5d7d9;
+  --color-metal-200: #8d9196;
+  --color-metal-300: #5c6166;
+  --color-metal-400: #3a3d40;
+  --color-metal-500: #2a2d30;
+  --color-metal-600: #232527;
+  --color-metal-700: #161615;
+  --color-metal-800: #141311;
+  --color-metal-900: #0c0c0c;
+
+  --color-blossom-50: #fdeef2;
+  --color-blossom-100: #f8d5de;
+  --color-blossom-200: #f0c0cc;
+  --color-blossom-300: #e7a8b8;
+  --color-blossom-400: #d894a6;
+  --color-blossom-500: #c98498;
+  --color-blossom-600: #a86a7c;
+  --color-blossom-700: #7d4e5c;
+  --color-blossom-800: #54343e;
+  --color-blossom-900: #2e1c22;
+
+  --color-white: #ffffff;
+  --color-stem-500: #6d5344;
+  --color-hatch-700: #25221f;
+  --color-screen-50: #f2f4f8;
+  --color-screen-300: #aab2c0;
+  --color-screen-400: #9aa4b5;
+  --color-screen-500: #718096;
+  --color-screen-700: #182338;
+  --color-screen-800: #111b2d;
+  --color-screen-sheet: rgb(255 255 255 / 94%);
+  --color-light-fill: #fff8e8;
+  --color-light-key: #ffe2b8;
+  --color-light-rim: #f3d7c4;
+
+  /* Color / lilac, plum, rose, sun: Flable scene ramps, sampled from the Flable UI and the Bg sample plate */
+  --color-lilac-50: #f6f3ff;
+  --color-lilac-100: #ede7ff;
+  --color-lilac-200: #dcd2fd;
+  --color-lilac-300: #cbbcf8;
+  --color-lilac-400: #b1adfb;
+  --color-lilac-500: #8f7cf0;
+  --color-lilac-600: #6e4fd9;
+  --color-lilac-700: #5c39ad;
+  --color-lilac-800: #3f2580;
+  --color-lilac-900: #2a1757;
+
+  --color-plum-50: #f3eef9;
+  --color-plum-100: #ddd2ec;
+  --color-plum-200: #b9a6d6;
+  --color-plum-300: #8f78b8;
+  --color-plum-400: #6a5294;
+  --color-plum-500: #4c3575;
+  --color-plum-600: #3a2660;
+  --color-plum-700: #2c1a4f;
+  --color-plum-800: #211046;
+  --color-plum-900: #140a2c;
+
+  --color-rose-50: #fff3fb;
+  --color-rose-100: #fde3f5;
+  --color-rose-200: #f9d6f3;
+  --color-rose-300: #eec5ec;
+  --color-rose-400: #dc97da;
+  --color-rose-500: #bb4fbd;
+  --color-rose-600: #9f3fa3;
+  --color-rose-700: #7d2f82;
+  --color-rose-800: #5a2160;
+  --color-rose-900: #36133a;
+
+  --color-sun-50: #fff7ec;
+  --color-sun-100: #ffecd2;
+  --color-sun-200: #ffdcae;
+  --color-sun-300: #ffc98a;
+  --color-sun-400: #f8b26a;
+  --color-sun-500: #ea9a4f;
+  --color-sun-600: #cc7c38;
+  --color-sun-700: #a05e29;
+  --color-sun-800: #6f401c;
+  --color-sun-900: #40250f;
+
+  /* Color / Flable brand: the three gradient bars of the Flable mark, from the client's Logo.svg */
+  --color-flable-pink: #fc2272;
+  --color-flable-magenta: #b717b4;
+  --color-flable-purple: #8714d2;
+  --color-flable-indigo: #2a32dd;
+  --color-flable-blue: #157ef3;
+  --color-flable-cyan: #02a2fa;
+
+  /* Font / family */
+  --font-family-display: "Source Serif 4 Variable", "Source Serif 4", Georgia, serif;
+  --font-family-heading: var(--font-family-display);
+  --font-family-body: "Inter Variable", "Inter", Arial, sans-serif;
+  --font-family-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+  --font-family-hand: "Nothing You Could Do", "Segoe Script", cursive;
+
+  /* Font / weight */
+  --font-weight-plain: 400;
+  --font-weight-light: 430;
+  --font-weight-regular: 450;
+  --font-weight-book: 470;
+  --font-weight-medium: 500;
+  --font-weight-heading: 520;
+  --font-weight-semibold: 560;
+  --font-weight-strong: 600;
+  --font-weight-bold: 650;
+  --font-weight-heavy: 750;
+  --font-weight-ui: 510;
+
+  /* Scale */
+  --scale-0: 0px;
+  --scale-2: 2px;
+  --scale-4: 4px;
+  --scale-8: 8px;
+  --scale-12: 12px;
+  --scale-16: 16px;
+  --scale-20: 20px;
+  --scale-24: 24px;
+  --scale-32: 32px;
+  --scale-40: 40px;
+  --scale-48: 48px;
+  --scale-56: 56px;
+  --scale-64: 64px;
+  --scale-80: 80px;
+  --scale-96: 96px;
+  --scale-128: 128px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+}
+
+/* Scale additions: even lengths; 1px is an explicit hairline/accessibility exception. */
+:root {
+  --scale-1: 1px;
+  --scale-10: 10px;
+  --scale-14: 14px;
+  --scale-18: 18px;
+  --scale-22: 22px;
+  --scale-26: 26px;
+  --scale-28: 28px;
+  --scale-30: 30px;
+  --scale-34: 34px;
+  --scale-36: 36px;
+  --scale-38: 38px;
+  --scale-42: 42px;
+  --scale-44: 44px;
+  --scale-46: 46px;
+  --scale-50: 50px;
+  --scale-52: 52px;
+  --scale-54: 54px;
+  --scale-60: 60px;
+  --scale-62: 62px;
+  --scale-66: 66px;
+  --scale-70: 70px;
+  --scale-72: 72px;
+  --scale-78: 78px;
+  --scale-82: 82px;
+  --scale-84: 84px;
+  --scale-88: 88px;
+  --scale-90: 90px;
+  --scale-92: 92px;
+  --scale-100: 100px;
+  --scale-106: 106px;
+  --scale-110: 110px;
+  --scale-120: 120px;
+  --scale-130: 130px;
+  --scale-140: 140px;
+  --scale-150: 150px;
+  --scale-160: 160px;
+  --scale-180: 180px;
+  --scale-190: 190px;
+  --scale-200: 200px;
+  --scale-220: 220px;
+  --scale-240: 240px;
+  --scale-250: 250px;
+  --scale-260: 260px;
+  --scale-284: 284px;
+  --scale-320: 320px;
+  --scale-340: 340px;
+  --scale-390: 390px;
+  --scale-400: 400px;
+  --scale-420: 420px;
+  --scale-430: 430px;
+  --scale-440: 440px;
+  --scale-480: 480px;
+  --scale-500: 500px;
+  --scale-650: 650px;
+  --scale-680: 680px;
+  --scale-860: 860px;
+  --scale-1200: 1200px;
+  --scale-count-4: 4;
+  --scale-count-8: 8;
+  --scale-count-12: 12;
+  --scale-ratio-0: 0;
+  --scale-ratio-100: 1;
+}
+
+:root {
+  --scale-1440: 1440px;
+  --scale-980: 980px;
+  --scale-700: 700px;
+  --scale-1600: 1600px;
+  --scale-1000: 1000px;
+}
+
+/* Scale / opacity: unitless fractions, separate from pixel lengths. */
+:root {
+  --scale-ratio-2: 0.02;
+  --scale-ratio-3: 0.03;
+  --scale-ratio-5: 0.05;
+  --scale-ratio-6: 0.06;
+  --scale-ratio-8: 0.08;
+  --scale-ratio-9: 0.09;
+  --scale-ratio-10: 0.1;
+  --scale-ratio-12: 0.12;
+  --scale-ratio-14: 0.14;
+  --scale-ratio-15: 0.15;
+  --scale-ratio-16: 0.16;
+  --scale-ratio-18: 0.18;
+  --scale-ratio-20: 0.2;
+  --scale-ratio-22: 0.22;
+  --scale-ratio-24: 0.24;
+  --scale-ratio-25: 0.25;
+  --scale-ratio-28: 0.28;
+  --scale-ratio-30: 0.3;
+  --scale-ratio-35: 0.35;
+  --scale-ratio-40: 0.4;
+  --scale-ratio-42: 0.42;
+  --scale-ratio-45: 0.45;
+  --scale-ratio-50: 0.5;
+  --scale-ratio-55: 0.55;
+  --scale-ratio-60: 0.6;
+  --scale-ratio-62: 0.62;
+  --scale-ratio-70: 0.7;
+  --scale-ratio-72: 0.72;
+  --scale-ratio-74: 0.74;
+  --scale-ratio-76: 0.76;
+  --scale-ratio-78: 0.78;
+  --scale-ratio-80: 0.8;
+  --scale-ratio-82: 0.82;
+  --scale-ratio-85: 0.85;
+  --scale-ratio-90: 0.9;
+  --scale-ratio-92: 0.92;
+}
+
+/* Design Minis keycap neutrals; independent of the page's stone palette. */
+:root {
+  --color-keycap-50: #ffffff;
+  --color-keycap-100: #e9e9e9;
+  --color-keycap-200: #cfcfcf;
+  --color-keycap-300: #aaaaaa;
+  --color-keycap-400: #777777;
+  --color-keycap-500: #4a4a4a;
+  --color-keycap-600: #333333;
+  --color-keycap-700: #282828;
+  --color-keycap-800: #232323;
+  --color-keycap-900: #202020;
+  --color-keycap-shadow: #000000;
+  /* Control typography inherits the primary body font. */
+  --font-family-control: var(--font-family-body);
+  --scale-rem: 1rem;
+}
+
+/* Exact source alpha bytes, avoiding rounded opacity substitutions. */
+:root {
+  --scale-keycap-alpha-26: calc(26 / 255);
+  --scale-keycap-alpha-31: calc(31 / 255);
+  --scale-keycap-alpha-38: calc(38 / 255);
+  --scale-keycap-alpha-51: calc(51 / 255);
+  --scale-keycap-alpha-56: calc(56 / 255);
+  --scale-keycap-alpha-64: calc(64 / 255);
+  --scale-keycap-alpha-68: calc(68 / 255);
+  --scale-keycap-alpha-71: calc(71 / 255);
+  --scale-keycap-alpha-128: calc(128 / 255);
+  --scale-keycap-alpha-153: calc(153 / 255);
+  --scale-keycap-alpha-166: calc(166 / 255);
+  --scale-keycap-alpha-191: calc(191 / 255);
+}
+
+:root { --scale-6: 6px; }
