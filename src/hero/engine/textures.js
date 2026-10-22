@@ -73,6 +73,40 @@ export function deskRoughness(seed = 11) {
 }
 
 /**
+ * The desk top's baked light falloff (a linear albedo factor on the box's UVs: u runs across its width from the
+ * left end; on the top v runs from the front edge (0) to the back, on the front face from its bottom (0) up). Full
+ * near the lamp and the cups, easing down past the laptop to about 0.6 at the left; a little lower along the
+ * front edge (the strip between the laptop and the edge sits right above the headline); the front face samples
+ * that row throughout (world.js).
+ */
+export function deskFalloff() {
+  const [width, height] = [256, 64];
+  const smooth = (t) => {
+    const c = Math.min(1, Math.max(0, t));
+    return c * c * (3 - 2 * c);
+  };
+  const element = document.createElement("canvas");
+  element.width = width;
+  element.height = height;
+  const context = element.getContext("2d");
+  const image = context.createImageData(width, height);
+  for (let y = 0; y < height; y += 1) {
+    // Canvas rows run top to bottom, v from 1 to 0.
+    const front = 0.58 + 0.42 * smooth((1 - (y + 0.5) / height) / 0.16);
+    for (let x = 0; x < width; x += 1) {
+      const across = 0.6 + 0.4 * smooth(((x + 0.5) / width - 0.18) / (0.62 - 0.18));
+      const v = Math.round(255 * across * front);
+      image.data.set([v, v, v, 255], (y * width + x) * 4);
+    }
+  }
+  context.putImageData(image, 0, 0);
+  const texture = new THREE.CanvasTexture(element);
+  texture.colorSpace = THREE.NoColorSpace;
+  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
+/**
  * Terrazzo / speckled glaze: an sRGB luminance albedo (white ground, flecks in three sizes). Fleck density
  * follows a low-frequency field, so they gather and thin out instead of sitting evenly on every face.
  */

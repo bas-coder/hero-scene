@@ -2,6 +2,7 @@ import sharp from "sharp";
 import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { flableShot } from "../src/hero/engine/shots/flable.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const output = resolve(root, "public", "media");
@@ -61,6 +62,18 @@ for (const screen of heroScreens) {
       .webp({ quality: 92, effort: 6, smartSubsample: true })
       .toFile(resolve(heroOutput, `${screen.name}-${width}.webp`));
   }
+}
+
+// Each breakout's detail texture: its UI at the export's native resolution (the shot's own crop of its screen).
+for (const breakout of flableShot.breakouts) {
+  if (!breakout.detail) continue;
+  const screenId = flableShot.screens[breakout.screen].id;
+  const source = heroScreens.find((screen) => screen.name === screenId)?.source;
+  if (!source) throw new Error(`No source export for the ${screenId} screen`);
+  const { left, top, width, height } = breakout.detail.crop;
+  const fitted = await fitToDisplay(resolve(root, "assets", "flable", source));
+  const name = breakout.detail.src.split("/").pop();
+  await sharp(fitted).extract({ left, top, width, height }).webp({ quality: 94, effort: 6, smartSubsample: true }).toFile(resolve(heroOutput, `${name}.webp`));
 }
 
 console.log("Responsive image assets are ready");

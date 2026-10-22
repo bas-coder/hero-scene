@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { lidRotation } from "./device.js";
+import { screenResponse } from "./mood.js";
 
 /**
  * MacBook Pro 14", from "2021 Macbook Pro 14" (M1 Pro / M1 Max)" by akshatmittal (CC BY 4.0),
@@ -26,7 +27,53 @@ const model = {
   legends: "SKOFticEGTqECbB",
   /** The aluminium shell materials (near-white metal in the source). */
   shell: ["zqeFZcIteZtOShc", "hPcehRUjcLAosED", "pZbDFXVUkfRwjmQ"],
+  /** The lid's aluminium shell, and the dark gasket around the display glass. */
+  lidShell: "zlRXoydEgBQgFUa",
+  gasket: "NhThIZELXlNUoIr",
 };
+
+/**
+ * The lid shell wraps a 0.7 mm aluminium lip around the front of the display, just behind the glass. Seen from
+ * the front it is under a pixel tall at 1x, so the samples catch it in runs: a dashed highlight along the lid's
+ * top edge. Its front-facing triangles (above the hinge) move onto the gasket's material, so the display's edge
+ * reads as one dark line.
+ */
+function rimToGasket(root, tilt) {
+  const shell = root.getObjectByName(model.lidShell);
+  const gasket = root.getObjectByName(model.gasket);
+  const index = shell?.geometry.getIndex();
+  if (!shell || !gasket || !index) return;
+  const open = THREE.MathUtils.degToRad(model.openAngle - 90);
+  const front = new THREE.Vector3(0, Math.sin(open), Math.cos(open));
+  const up = new THREE.Vector3(0, Math.cos(open), -Math.sin(open));
+  // Shell geometry → the lid's own frame (model metres, from the hinge).
+  const toLid = tilt.matrixWorld.clone().invert().multiply(shell.matrixWorld);
+  const toLidNormal = new THREE.Matrix3().getNormalMatrix(toLid);
+  const position = shell.geometry.getAttribute("position");
+  const normal = shell.geometry.getAttribute("normal");
+  const point = new THREE.Vector3();
+  const direction = new THREE.Vector3();
+  const facesFront = (i) => {
+    point.fromBufferAttribute(position, i).applyMatrix4(toLid);
+    direction.fromBufferAttribute(normal, i).applyMatrix3(toLidNormal).normalize();
+    // Above the hinge barrel (its front stays aluminium), normals within about 60° of the display's.
+    return point.dot(up) > 0.02 && direction.dot(front) > 0.5;
+  };
+  const metal = [];
+  const rim = [];
+  for (let i = 0; i < index.count; i += 3) {
+    const corners = [index.getX(i), index.getX(i + 1), index.getX(i + 2)];
+    (corners.some(facesFront) ? rim : metal).push(...corners);
+  }
+  if (!rim.length) return;
+  const rimGeometry = shell.geometry.clone();
+  rimGeometry.setIndex(rim);
+  shell.geometry.setIndex(metal);
+  const rimMesh = new THREE.Mesh(rimGeometry, gasket.material);
+  rimMesh.name = `${model.lidShell}-rim`;
+  rimMesh.castShadow = rimMesh.receiveShadow = true;
+  shell.add(rimMesh);
+}
 
 /** The Return key on the scanned keyboard, in device space (scene units): measured from the model's keycaps. */
 export const returnKey = { x: 1.219, y: 0.1296, z: -0.271, width: 0.305, depth: 0.155 };
@@ -108,6 +155,8 @@ export async function loadLaptop({ assetBase, palette, screenMaterial }) {
     if (model.shell.includes(material.name)) {
       material.metalness = palette.laptop.metalness;
       material.roughness = palette.laptop.roughness;
+      // The shell keeps a fraction of the screen's specular (the reference's base is a soft violet).
+      screenResponse(material, { specular: palette.laptop.screenSheen ?? 1 });
       shellMaterials.push(material);
     }
     material.envMapIntensity = palette.laptop.envIntensity;
@@ -115,9 +164,11 @@ export async function loadLaptop({ assetBase, palette, screenMaterial }) {
       if (texture) texture.anisotropy = 8;
     }
     // Key legends: at 1x they read as dark caps with faint grey glyphs, not white speckle.
-    if (material.name === model.legends) material.color.setScalar(0.35);
+    if (material.name === model.legends) material.color.setScalar(0.22);
   });
   display.castShadow = false;
+  root.updateMatrixWorld(true);
+  rimToGasket(root, tilt);
 
   const group = new THREE.Group();
   const scaled = new THREE.Group();

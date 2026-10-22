@@ -11,7 +11,8 @@ function walk(directory) {
 }
 const componentFiles = walk(src).filter(url => !url.pathname.includes('/design/'));
 const styles = componentFiles.filter(url => url.pathname.endsWith('.css')).map(url => fs.readFileSync(url, 'utf8')).join('\n');
-const componentCode = componentFiles.filter(url => /\.tsx?$/.test(url.pathname)).map(url => fs.readFileSync(url, 'utf8')).join('\n');
+// Component code includes the hero engine's plain .js: its colours come from --scene-* tokens too.
+const componentCode = componentFiles.filter(url => /\.(?:tsx?|js)$/.test(url.pathname)).map(url => fs.readFileSync(url, 'utf8')).join('\n');
 const definitions = new Set([... (collections + styles).matchAll(/(--[\w-]+)\s*:/g)].map(match => match[1]));
 const errors = [];
 for (const match of (collections + styles).matchAll(/var\((--[\w-]+)([^)]*)\)/g)) {

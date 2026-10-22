@@ -20,9 +20,10 @@ const plates = [
     blur: 3,
     // Toward the reference's rose-magenta (the generation drifted peach): saturation, then channel gains.
     grade: { saturation: 1.3, gain: [1.08, 0.94, 1.22] },
-    // Below the desk line the reference reads a lit violet (about 64, 34, 109), not black: lift the plate's
-    // lower band (frame y from `from` down) by up to `gain`, keeping its hue.
-    lower: { from: 0.6, gain: 1.8 },
+    // Below the desk line the reference reads a quiet lit violet (about 64, 34, 109), not black: lift the plate's
+    // lower band (frame y from `from` down) by up to `gain` and calm its colour toward that violet (`saturation`).
+    // It sits behind the headline: at 1.8 the bed under the desk glowed magenta there.
+    lower: { from: 0.6, gain: 1.35, saturation: 0.75 },
   },
 ];
 
@@ -58,9 +59,11 @@ for (const plate of plates) {
       const inside = Math.min(ix, width - 1 - ix, iy, height - 1 - iy);
       const w = ease(Math.min(1, Math.max(0, inside / feather)));
       let k = 1 - 0.68 * ease(Math.min(1, Math.hypot(outX * 1.0, outY * (iy >= height ? 0.5 : 1))));
+      let below = 0;
       if (plate.lower) {
         const frameY = ry0 + (y / info.height) * (ry1 - ry0);
-        k *= 1 + (plate.lower.gain - 1) * ease(Math.min(1, Math.max(0, (frameY - plate.lower.from) / 0.2)));
+        below = ease(Math.min(1, Math.max(0, (frameY - plate.lower.from) / 0.2)));
+        k *= 1 + (plate.lower.gain - 1) * below;
       }
       const i = (y * info.width + x) * info.channels;
       const rgb = [0, 1, 2].map((c) => (far[i + c] + (data[i + c] - far[i + c]) * w) * k);
@@ -72,6 +75,11 @@ for (const plate of plates) {
           const graded = (luma + (rgb[c] - luma) * plate.grade.saturation) * plate.grade.gain[c];
           rgb[c] += (graded - rgb[c]) * t;
         }
+      }
+      if (plate.lower?.saturation !== undefined && below > 0) {
+        const luma = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+        const s = 1 + (plate.lower.saturation - 1) * below;
+        for (let c = 0; c < 3; c += 1) rgb[c] = luma + (rgb[c] - luma) * s;
       }
       // A little seeded dither (an unstructured hash), so the encoder doesn't block up the smooth gradients.
       let h = Math.imul(x, 374761393) + Math.imul(y, 668265263);

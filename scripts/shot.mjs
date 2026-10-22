@@ -117,7 +117,22 @@ const measureHud = `(() => {
     if (!el) return null;
     return boxOf(el, getComputedStyle(el).position === 'fixed' ? { left: origin.left, top: 0 } : origin);
   }).filter(Boolean);
-  const text = [...section.querySelectorAll('.hero-line, .availability, .glass-button, .hero-meta span')].map((el) => boxOf(el, origin)).filter(Boolean);
+  const lines = (el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const rows = [];
+    for (const r of range.getClientRects()) {
+      if (!r.width || !r.height) continue;
+      const row = rows.find((b) => r.top < b.bottom - 2 && r.bottom > b.top + 2);
+      if (row) { row.left = Math.min(row.left, r.left); row.right = Math.max(row.right, r.right); row.top = Math.min(row.top, r.top); row.bottom = Math.max(row.bottom, r.bottom); }
+      else rows.push({ left: r.left, right: r.right, top: r.top, bottom: r.bottom });
+    }
+    return rows.map((b) => ({ left: b.left - origin.left, top: b.top - origin.top, right: b.right - origin.left, bottom: b.bottom - origin.top }));
+  };
+  const text = [
+    ...[...section.querySelectorAll('.availability, .hero-line')].flatMap(lines),
+    ...[...section.querySelectorAll('.hero-actions > *')].map((el) => boxOf(el, origin)).filter(Boolean),
+  ];
   return { width: origin.width, height: origin.height, hud, chrome, text };
 })()`;
 
@@ -160,7 +175,8 @@ try {
       await send("Page.navigate", { url: `${hudBase}/?capture&t=7.8` }, sessionId);
       await wait(1500);
       for (let attempt = 0; attempt < 100; attempt += 1) {
-        if (await evaluate("document.fonts.status === 'loaded' && !!document.querySelector('.hero-copy')")) break;
+        // The headline is measured once its characters are split (data-text-ready), as the site measures it.
+        if (await evaluate("document.fonts.status === 'loaded' && !!document.querySelector('.hero-copy') && !!document.querySelector('[data-text-ready]')")) break;
         await wait(200);
       }
       await wait(600);

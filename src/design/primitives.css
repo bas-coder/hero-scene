@@ -119,15 +119,6 @@
   --color-blossom-900: #2e1c22;
 
   --color-white: #ffffff;
-  --color-stem-500: #6d5344;
-  --color-hatch-700: #25221f;
-  --color-screen-50: #f2f4f8;
-  --color-screen-300: #aab2c0;
-  --color-screen-400: #9aa4b5;
-  --color-screen-500: #718096;
-  --color-screen-700: #182338;
-  --color-screen-800: #111b2d;
-  --color-screen-sheet: rgb(255 255 255 / 94%);
   --color-light-fill: #fff8e8;
   --color-light-key: #ffe2b8;
   --color-light-rim: #f3d7c4;
@@ -176,14 +167,6 @@
   --color-sun-700: #a05e29;
   --color-sun-800: #6f401c;
   --color-sun-900: #40250f;
-
-  /* Color / Flable brand: the three gradient bars of the Flable mark, from the client's Logo.svg */
-  --color-flable-pink: #fc2272;
-  --color-flable-magenta: #b717b4;
-  --color-flable-purple: #8714d2;
-  --color-flable-indigo: #2a32dd;
-  --color-flable-blue: #157ef3;
-  --color-flable-cyan: #02a2fa;
 
   /* Font / family */
   --font-family-display: "Source Serif 4 Variable", "Source Serif 4", Georgia, serif;
@@ -377,3 +360,85 @@
 }
 
 :root { --scale-6: 6px; }
+
+/* Color / hero scene: the 3D hero's materials, lights and grade (lab-measured against the shot's reference; see lab/hero/BRIEF.md). The world's own values are black; a shot's are its dressing and mood. */
+:root {
+  --color-hero-world-void: #030304;
+  --color-hero-world-desk: #101011;
+  --color-hero-world-frame: #0f0f10;
+  --color-hero-world-prop: #0d0d0e;
+  --color-hero-world-cup: #121213;
+  --color-hero-world-speckle: #060607;
+  --color-hero-world-pencils-1: #0b0b0c;
+  --color-hero-world-pencils-2: #151516;
+  --color-hero-world-pencil-wood: #0e0d0c;
+  --color-hero-world-lamp-body: #111112;
+  --color-hero-world-notebook: #0e0d0d;
+  --color-hero-world-pages: #141414;
+  --color-hero-world-phone: #151516;
+  --color-hero-world-phone-glass: #121213;
+  --color-hero-world-coaster: #0d0c0c;
+  --color-hero-world-wall: #0a0a0b;
+  --color-hero-world-floor: #050506;
+  --color-hero-world-plate-tint: #ffffff;
+  --color-hero-world-graphite: #0b0b0c;
+  --color-hero-world-chair: #0b0b0c;
+  --color-hero-world-tile: #e6e6e8;
+  --color-hero-world-tile-shadow: #050506;
+  --color-hero-world-key: #151517;
+  --color-hero-world-key-glow: #000000;
+  --color-hero-world-tile-light: #e9e9ec;
+  --color-hero-flable-desk: #d9d5d1;
+  --color-hero-flable-frame: #9c99a1;
+  --color-hero-flable-prop: #2a2a2c;
+  --color-hero-flable-cup: #e6e3de;
+  --color-hero-flable-speckle: #8b857d;
+  --color-hero-flable-pencils-1: #1d1d22;
+  --color-hero-flable-pencils-2: #3a3a44;
+  --color-hero-flable-pencils-3: #8a8f99;
+  --color-hero-flable-pencils-4: #e8e4dc;
+  --color-hero-flable-pencils-5: #c9b79c;
+  --color-hero-flable-pencils-6: #5a4f48;
+  --color-hero-flable-pencil-wood: #cfa77c;
+  --color-hero-flable-lamp-body: #ebe9e6;
+  --color-hero-flable-notebook: #b48a62;
+  --color-hero-flable-pages: #e9e2d4;
+  --color-hero-flable-phone: #c0d9b0;
+  --color-hero-flable-phone-glass: #c8ddb9;
+  --color-hero-flable-coaster: #6f4a2e;
+  --color-hero-flable-wall: #1c0d29;
+  --color-hero-flable-floor: #2a2140;
+  --color-hero-flable-plate-tint: #ffffff;
+  --color-hero-flable-graphite: #1d1d21;
+  --color-hero-flable-chair: #7a5fb8;
+  --color-hero-flable-tile: #ffffff;
+  --color-hero-flable-tile-shadow: #17151d;
+  --color-hero-flable-key: #f4f0f8;
+  --color-hero-flable-key-glow: #dcd2fd;
+  --color-hero-flable-tile-light: #fcfbfd;
+  --color-hero-screen-off: #050506;
+  --color-hero-screen-dim: #514c63;
+  --color-hero-screen-glass: #2a1a33;
+  --color-hero-base-lamp: #fff0df;
+  --color-hero-base-window: #dfe6ee;
+  --color-hero-base-ambient-sky: #c9ccd1;
+  --color-hero-base-ambient-ground: #0a0a0a;
+  --color-hero-base-screen: #eef1f7;
+  --color-hero-base-practicals: #ffe2c2;
+  --color-hero-base-env-room: #b9bcc2;
+  --color-hero-base-env-desk: #d8d6d3;
+  --color-hero-base-sketch-paper: #030304;
+  --color-hero-base-sketch-ink: #d9d9dc;
+  --color-hero-base-sketch-shade: #34343a;
+  --color-hero-flable-lamp: #ff9ccf;
+  --color-hero-flable-window: #8c6bff;
+  --color-hero-flable-ambient-sky: #8a5be0;
+  --color-hero-flable-ambient-ground: #1a0d26;
+  --color-hero-flable-screen: #e9e6ff;
+  --color-hero-flable-practicals: #ffae7a;
+  --color-hero-flable-env-room: #8a6fa8;
+  --color-hero-flable-env-desk: #d9b8ea;
+  --color-hero-flable-sketch-paper: #030304;
+  --color-hero-flable-sketch-ink: #dcd2fd;
+  --color-hero-flable-sketch-shade: #3a3446;
+}

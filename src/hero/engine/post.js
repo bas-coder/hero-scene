@@ -51,6 +51,7 @@ const downFragment = /* glsl */ `
 const upFragment = /* glsl */ `
   uniform sampler2D source;
   uniform vec2 texel;
+  uniform float weight;
   varying vec2 vUv;
   void main() {
     vec3 sum = texture2D(source, vUv + vec2(-texel.x * 2.0, 0.0)).rgb;
@@ -61,7 +62,8 @@ const upFragment = /* glsl */ `
     sum += texture2D(source, vUv + vec2(texel.x, -texel.y)).rgb * 2.0;
     sum += texture2D(source, vUv + vec2(0.0, -texel.y * 2.0)).rgb;
     sum += texture2D(source, vUv + vec2(-texel.x, -texel.y)).rgb * 2.0;
-    gl_FragColor = vec4(sum / 12.0, 1.0);
+    // Each coarser level adds in at a fraction: the glow hugs its source instead of hazing the objects around it.
+    gl_FragColor = vec4(sum / 12.0 * weight, 1.0);
   }
 `;
 
@@ -125,8 +127,9 @@ const compositeFragment = /* glsl */ `
     float screenMask = 1.0 - hdr.a;
 
     // The world: exposure, ACES once, then the shot's grade.
-    vec3 world = aces((hdr.rgb + glow) * exposure);
-    world = pow(max(world * gain + lift * (1.0 - world), 0.0), 1.0 / gamma);
+    // The shot's gain tints the light before the tone curve, so highlights roll off instead of clipping.
+    vec3 world = aces((hdr.rgb + glow) * exposure * gain);
+    world = pow(max(world + lift * (1.0 - world), 0.0), 1.0 / gamma);
     float luma = dot(world, vec3(0.2126, 0.7152, 0.0722));
     world = mix(vec3(luma), world, saturation);
 
@@ -157,8 +160,8 @@ const compositeFragment = /* glsl */ `
       float filled = 1.0 - smoothstep(real * 1.3 - 0.16, real * 1.3 - 0.02, sweep + jitter * 0.5);
       vec3 sketch = mix(paper, shade, clamp(light, 0.0, 1.0) * 0.35 * drawn);
       sketch = mix(sketch, inkColor, line * drawn * 0.9);
-      // Light sources glow through the drawing (the lamp lights first, before the colour arrives).
-      sketch = mix(sketch, color, smoothstep(0.55, 0.95, light) * hdr.a);
+      // Only light sources glow through the drawing (the bulb lights first); lit surfaces stay ink on black.
+      sketch = mix(sketch, color, smoothstep(0.82, 0.98, light) * hdr.a);
       color = mix(sketch, color, filled);
     }
 
@@ -190,7 +193,7 @@ export function createPost(renderer, { quality }) {
 
   const brightPass = pass(brightFragment, { source: { value: null }, threshold: { value: 1 }, knee: { value: 0.5 } });
   const downPass = pass(downFragment, { source: { value: null }, texel: { value: new THREE.Vector2() } });
-  const upPass = pass(upFragment, { source: { value: null }, texel: { value: new THREE.Vector2() } });
+  const upPass = pass(upFragment, { source: { value: null }, texel: { value: new THREE.Vector2() }, weight: { value: 0.42 } });
   upPass.blending = THREE.AdditiveBlending;
   const composite = pass(compositeFragment, {
     scene: { value: scene.texture },

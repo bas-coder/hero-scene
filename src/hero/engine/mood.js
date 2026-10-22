@@ -2,6 +2,26 @@ import * as THREE from "three";
 import { RectAreaLightUniformsLib } from "three/examples/jsm/lights/RectAreaLightUniformsLib.js";
 
 /**
+ * How strongly a material answers the screen's area light (its specular and its diffuse, each 0 → 1; every other
+ * light is untouched). Polished aluminium right under the lit screen mirrors it so sharply that the palm rest burns
+ * white; a desk only ever sees the screen at a grazing angle, where a real panel emits far less than the area
+ * light's even (Lambertian) spread. Both sit beside the headline (rule 47).
+ */
+export function screenResponse(material, { specular = 1, diffuse = 1 } = {}) {
+  const chunk = THREE.ShaderChunk.lights_physical_pars_fragment;
+  const specularTerm = "reflectedLight.directSpecular += lightColor * fresnel * LTC_Evaluate";
+  const diffuseTerm = "reflectedLight.directDiffuse += lightColor * material.diffuseContribution * LTC_Evaluate";
+  if ((specular === 1 && diffuse === 1) || !chunk.includes(specularTerm) || !chunk.includes(diffuseTerm)) return;
+  const softened = chunk
+    .replace(specularTerm, `reflectedLight.directSpecular += ${specular.toFixed(3)} * lightColor * fresnel * LTC_Evaluate`)
+    .replace(diffuseTerm, `reflectedLight.directDiffuse += ${diffuse.toFixed(3)} * lightColor * material.diffuseContribution * LTC_Evaluate`);
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace("#include <lights_physical_pars_fragment>", softened);
+  };
+  material.customProgramCacheKey = () => `screen-response-${specular}-${diffuse}`;
+}
+
+/**
  * A shot's mood: lights (lamp key, window rim, the shelf's warm practical rim, low ambient, the screen's own
  * spill) and the bulb take their colour and strength from the mood; the dressing sets the materials. The room's
  * bounce reaches the scene through the environment (index.js), not a flat ambient, so shadows keep depth.

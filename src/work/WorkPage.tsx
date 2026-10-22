@@ -19,21 +19,22 @@ import { workSampleItems } from "../content/library";
 import { youtubeChannel } from "../content/tutorials";
 import { LibraryCard } from "../library/LibraryCard";
 import { bookHref, email } from "../lib/contact";
-import { flableShot } from "../hero/shots/flable";
+import { getShot } from "../hero/engine/shots/index.js";
 import { caseHref } from "../content/cases";
 import type { HeroContent, ProjectMedia, QualityTier } from "../types";
 import type { ClientWithLogo } from "../content/clients";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const HeroScene = dynamic(() => import("../components/HeroScene").then((module) => module.HeroScene), { ssr: false });
+const HeroCanvas = dynamic(() => import("../components/HeroCanvas").then((module) => module.HeroCanvas), { ssr: false });
+const heroShot = getShot("flable");
 
 const heroContent: HeroContent = {
   badge: "A few project slots are open",
-  name: "Abbas Alabura –",
+  name: "Abbas Alabura -",
   headline: [
     [{ text: "a " }, { text: "product designer", em: true }, { text: " who makes" }],
-    [{ text: "complex products feel simple." }],
+    [{ text: "complex products feel simple" }],
   ],
   primaryLabel: "Start a project",
   primaryHref: bookHref,
@@ -146,11 +147,11 @@ function Hero({
   heroRef: MutableRefObject<HTMLElement | null>;
 }) {
   return (
-    <section ref={heroRef} className="hero" id="top" aria-labelledby="hero-title" data-header-tone="dark" data-hero-shot={flableShot.id}>
+    <section ref={heroRef} className="hero" id="top" aria-labelledby="hero-title" data-header-tone="dark" data-header-current="glass" data-hero-shot={heroShot.id}>
       <div className="hero-visual" aria-hidden="true">
         {hasWebGL === true && (
           <Suspense fallback={null}>
-            <HeroScene reveal={reveal} quality={quality} onReady={onSceneReady} exit={exit} active={active} reducedMotion={reducedMotion} />
+            <HeroCanvas reveal={reveal} quality={quality} onReady={onSceneReady} exit={exit} active={active} reducedMotion={reducedMotion} />
           </Suspense>
         )}
         {hasWebGL === false && <ResponsiveImage media={heroPosterMedia} className="hero-fallback" sizes="100vw" />}
@@ -395,7 +396,7 @@ function MobileDock() {
   );
 }
 
-const sceneRevealDuration = flableShot.introDuration;
+const sceneRevealDuration = heroShot.introDuration;
 
 export function WorkPage({ clients }: { clients: ClientWithLogo[] }) {
   const [isCaptureMode] = useState(() => typeof document !== "undefined" && document.documentElement.dataset.capture === "true");

@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Hero lab</title>
   <link rel="icon" href="data:," />
+  <!-- The site's design collections: the hero's colours are --scene-hero-* tokens (one source for site and lab). -->
+  <link rel="stylesheet" href="/src/design/primitives.css" />
+  <link rel="stylesheet" href="/src/design/theme.css" />
+  <link rel="stylesheet" href="/src/design/responsive.css" />
+  <link rel="stylesheet" href="/src/design/effects.css" />
   <style>
     html, body { margin: 0; height: 100%; background: #050506; overflow: hidden; }
     #stage { position: fixed; inset: 0; }
@@ -12,8 +17,11 @@
     .hud { position: fixed; pointer-events: none; outline: 1px dashed rgba(255, 255, 255, 0.35); }
     .hud.text { outline: none; background: rgba(255, 255, 255, 0.82); border-radius: 2px; }
     .hud.chrome { outline-color: rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.04); }
-    .tip { position: fixed; transform: translate(-50%, -100%); padding: 8px 12px; border-radius: 10px; background: rgba(28, 28, 32, 0.72);
-      color: #fff; font: 500 14px/1.3 system-ui, sans-serif; white-space: nowrap; pointer-events: auto;
+    /* The site's tooltip recipe (styles.css .case-key-tip), from the same tokens. */
+    .tip { position: fixed; transform: translate(-50%, -100%); padding: var(--tooltip-pad-y) var(--tooltip-pad-x);
+      border: var(--border-hairline) solid var(--tooltip-line); border-radius: var(--radius-tile); background: var(--tooltip-fill);
+      -webkit-backdrop-filter: blur(var(--tooltip-blur)); backdrop-filter: blur(var(--tooltip-blur)); box-shadow: var(--shadow-tooltip);
+      color: var(--tooltip-ink); font: 500 14px/1.3 system-ui, sans-serif; white-space: nowrap; pointer-events: auto;
       opacity: 0; translate: 0 6px; transition: opacity 200ms ease, translate 200ms ease; }
     .tip.on { opacity: 1; translate: 0 0; transition-duration: 160ms; }
     .err { position: fixed; left: 12px; bottom: 12px; color: #f66; font: 12px monospace; white-space: pre; }
@@ -33,24 +41,31 @@
     import * as THREE from "three";
     import { createHeroRenderer } from "/src/hero/engine/index.js";
     import { stageFromBoxes } from "/src/hero/engine/framing.js";
+    import { heroPalette, readCssToken, resolvePalette } from "/src/hero/engine/palette.js";
 
     const params = new URLSearchParams(location.search);
     const fixed = ["intro", "t", "exit"].map((phase) => [phase, params.get(phase)]).find(([, v]) => v !== null && Number.isFinite(Number(v)));
     const fixedFrame = fixed ? { phase: fixed[0] === "t" ? "loop" : fixed[0], time: Number(fixed[1]) } : null;
     const lab = (window.__lab = { stats: null });
 
-    const [palette, hud] = await Promise.all([fetch("./palette.json").then((r) => r.json()), fetch("./hud.json").then((r) => r.json()).catch(() => ({}))]);
+    // Tokens resolve once the design collections have loaded.
+    await Promise.all([...document.querySelectorAll('link[rel="stylesheet"]')].map((link) => (link.sheet ? null : new Promise((done) => link.addEventListener("load", done, { once: true })))));
+    const palette = resolvePalette(heroPalette, readCssToken);
+    const hud = await fetch("./hud.json").then((r) => r.json()).catch(() => ({}));
 
-    // HUD keep-out from the live site's measured boxes (nearest measured viewport, scaled to this one).
+    // HUD keep-out from the live site's measured boxes: the nearest measured viewport (by width and height, since the
+    // site's copy keeps its size on a short window), scaled to this one. Measure the sizes you judge at
+    // (scripts/shot.mjs --hud), or the lab frames a guess.
     function stageFor(width, height) {
-      const key = Object.keys(hud).sort((a, b) => Math.abs(+a.split("x")[0] - width) - Math.abs(+b.split("x")[0] - width))[0];
+      const distance = (key) => Math.hypot(+key.split("x")[0] - width, +key.split("x")[1] - height);
+      const key = Object.keys(hud).sort((a, b) => distance(a) - distance(b))[0];
       const measured = hud[key];
       if (!measured) return stageFromBoxes({ width, height });
       const sx = width / measured.width;
       const sy = height / measured.height;
       const scale = (box) => ({ left: box.left * sx, right: box.right * sx, top: box.top * sy, bottom: box.bottom * sy });
       drawHud(measured, sx, sy);
-      return stageFromBoxes({ width, height, hud: measured.hud.map(scale), chrome: measured.chrome.map(scale) });
+      return stageFromBoxes({ width, height, hud: measured.hud.map(scale), chrome: measured.chrome.map(scale), text: (measured.text ?? []).map(scale) });
     }
     function drawHud(measured, sx, sy) {
       document.querySelectorAll(".hud").forEach((el) => el.remove());
@@ -103,6 +118,10 @@
         onKeyClick: () => console.info("case study →"),
       });
       lab.engine = engine;
+      // Held frames can be re-timed in place (dense sequences for diagnostics): lab.fixedFrame.time = t.
+      lab.fixedFrame = fixedFrame;
+      // The resolved palette the engine reads (tune a mood live, then engine.setMood(name) to rebuild its environment).
+      lab.palette = palette;
       lab.timing = { created: Math.round(performance.now()) };
       // Isolation: ?hide=card-room,desk hides objects by name (for tracking down artefacts).
       for (const name of (params.get("hide") ?? "").split(",").filter(Boolean)) {

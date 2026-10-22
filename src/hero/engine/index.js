@@ -1,10 +1,10 @@
 import * as THREE from "three";
 import { devicePoints, displayPoints, lidRotation, macbook14, screenToDisplay } from "./device.js";
-import { applyFraming, canonicalStage, projectPoints, screenBand, solveFraming } from "./framing.js";
+import { applyFraming, canonicalStage, convexHull, polygonHitsBox, projectPoints, screenBand, solveFraming } from "./framing.js";
 import { loadLaptop, returnKey } from "./laptop.js";
 import { applyMood, createLights, createScreenLight } from "./mood.js";
-import { createScreenMaterial, loadScreens, setScreen } from "./screen.js";
-import { emptyState } from "./shots/flable.js";
+import { createScreenMaterial, loadDetails, loadScreens, setScreen } from "./screen.js";
+import { emptyState, screenIndex } from "./shots/flable.js";
 import { getShot } from "./shots/index.js";
 import { clamp01, cubicBezier, easeStudio, lerp, sampleTracks } from "./timeline.js";
 import { createPost } from "./post.js";
@@ -98,6 +98,10 @@ export async function createHeroRenderer(canvas, options) {
     onKeyHover,
     onKeyClick,
     onFrame,
+    // The site's clocks (its GSAP intro and scroll exit), read every frame; the lab pushes values instead.
+    sources = null,
+    // The HUD checks (scripts/hero-qa.mjs): count frames where the lit screen or the lifted strip hits HUD text.
+    qa = false,
   } = options;
   let shot = getShot(shotId);
   let mood = palette.moods[moodOverride ?? shot.mood] ?? palette.moods.base;
@@ -126,10 +130,11 @@ export async function createHeroRenderer(canvas, options) {
 
   const screen = createScreenMaterial(palette);
   const roomPlate = dressingFor(shot).roomPlate;
-  const [laptop, textures, plate] = await Promise.all([
+  const [laptop, textures, plate, details] = await Promise.all([
     loadLaptop({ assetBase, palette, screenMaterial: screen }),
     loadScreens(shot, { assetBase, quality, renderer }),
     roomPlate ? loadPlate(`${assetBase}${roomPlate}-${quality === "low" ? 1024 : 2048}.webp`, renderer) : null,
+    loadDetails(shot, { assetBase, quality, renderer }),
   ]);
   world.setRoomPlate(plate);
   scene.add(laptop.group);
@@ -139,12 +144,32 @@ export async function createHeroRenderer(canvas, options) {
   let environment = buildEnvironment(renderer, mood);
   scene.environment = environment.texture;
 
-  // Breakout: the strip's socket on the screen, and its tiles (pixels copied from the screen they leave). The
-  // socket only opens while tiles exist, so the screen never shows an empty hole. The case key under Return.
-  const strip = shot.breakout.rect;
-  screen.uniforms.socketRect.value.set(strip.x0, strip.y0, strip.x1, strip.y1);
+  // Breakouts: UI that lifts out of its screen (pixels copied from the screen it leaves), and the socket it leaves
+  // there. The socket opens only while its tiles exist, on its own screen, so the screen never shows an empty hole.
+  // The case key under Return.
+  screen.uniforms.aspect.value = shot.screens[0].width / shot.screens[0].height;
+  screen.uniforms.radius.value = shot.ui.radius;
+  screen.uniforms.sidebar.value.set(...shot.ui.sidebar);
   const look = { ...palette.world, ...dressingFor(shot) };
-  const breakoutTiles = createBreakout({ display: laptop.display, breakout: shot.breakout, texture: textures[shot.breakout.screen], look, spec });
+  const breakouts = (shot.breakouts ?? []).map((entry, i) => ({
+    entry,
+    tiles: createBreakout({
+      display: laptop.display,
+      breakout: entry,
+      texture: details[i] ?? textures[entry.screen],
+      crop: details[i] ? entry.detail.crop.rect : { x0: 0, y0: 0, x1: 1, y1: 1 },
+      look,
+      spec,
+      radius: (entry.radius ?? shot.ui.radius) * spec.display.height,
+    }),
+  }));
+  const liftOf = (s, entry) => s[entry.lift] ?? 0;
+  /** The breakout lifted most this frame (they never overlap), or null while every one sits in its screen. */
+  const activeBreakout = (s) => {
+    let active = null;
+    for (const breakout of breakouts) if (liftOf(s, breakout.entry) > 0.002 && (!active || liftOf(s, breakout.entry) > liftOf(s, active.entry))) active = breakout;
+    return active;
+  };
   const caseKey = shot.caseKey ? createCaseKey({ base: laptop.group, look }) : null;
 
   const state = emptyState();
@@ -168,7 +193,9 @@ export async function createHeroRenderer(canvas, options) {
     const corners = [];
     for (let i = 0; i <= 24; i += 1) {
       const pose = sampleTracks(shot.loop, (i / 24) * shot.loopDuration, scratch);
-      if (pose.zoom > 1.001 || pose.focus > 0.01 || pose.lift > 0.001) continue;
+      // Rest poses are camera poses: the spotlight and the breakouts don't move the device. (Every focus or lift
+      // time before the Chats beat also had zoom > 1, so the sample set is unchanged.)
+      if (pose.zoom > 1.001) continue;
       points.push(...devicePoints(pose.rotY * compactScale, pose.lid));
       corners.push(...displayPoints(pose.rotY * compactScale, pose.lid));
     }
@@ -177,7 +204,7 @@ export async function createHeroRenderer(canvas, options) {
     cam.aspect = current.width / current.height;
     cam.updateProjectionMatrix();
     const projected = projectPoints(points, cam, current.width, current.height).map((p) => p.clone());
-    const band = { points: projectPoints(corners, cam, current.width, current.height).map((p) => p.clone()), ...screenBand(current) };
+    const band = { points: projectPoints(corners, cam, current.width, current.height).map((p) => p.clone()), stage: current };
     const { compact, desktop } = shot.framing;
     if (current.compact) return solveFraming(projected, current, new THREE.Vector2(...compact.anchor), current.width * compact.maxWidth, band);
     // The reference's size: the HUD may overlap the deck's edges; the lit screen stays above the headline.
@@ -187,7 +214,8 @@ export async function createHeroRenderer(canvas, options) {
       keepOut: [],
       bounds: { left: current.width * 0.05, right: current.width * 0.95, top: current.chromeTop + margin, bottom: current.footerTop - margin * 0.5 },
     };
-    return solveFraming(projected, centred, new THREE.Vector2(...desktop.anchor), current.width * desktop.maxWidth, band);
+    // The composition holds (the lamp and cups stay in frame): the device may move only a little to buy size.
+    return solveFraming(projected, centred, new THREE.Vector2(...desktop.anchor), current.width * desktop.maxWidth, band, 0.12);
   };
 
   // Pointer: parallax anywhere on the page (fine pointers only), and the Return key under the cursor.
@@ -225,12 +253,25 @@ export async function createHeroRenderer(canvas, options) {
     onKeyHover({ hovered: hit, x: ((keyPixel.x + 1) / 2) * rect.width, y: ((1 - keyPixel.y) / 2) * rect.height });
   }
 
+  // The lifted tile under the cursor (fine pointers, full motion, a breakout out), against last frame's pose.
+  function pickTile(s) {
+    const active = activeBreakout(s);
+    if (!active || !fine || reducedMotion || !lastClient || liftOf(s, active.entry) < 0.6 || exit > 0.05) return null;
+    const rect = canvas.getBoundingClientRect();
+    if (lastClient.x < rect.left || lastClient.x > rect.right || lastClient.y < rect.top || lastClient.y > rect.bottom) return null;
+    ndc.set(((lastClient.x - rect.left) / rect.width) * 2 - 1, -((lastClient.y - rect.top) / rect.height) * 2 + 1);
+    raycaster.setFromCamera(ndc, camera);
+    return active.tiles.pick(raycaster);
+  }
+
   const focusWorld = Array.from({ length: 4 }, () => new THREE.Vector3());
   const focusPixels = [];
   const shift = new THREE.Vector2();
   const pivot = new THREE.Vector2();
 
   function sample(delta) {
+    if (sources?.reveal) reveal = sources.reveal();
+    if (sources?.exit) exit = sources.exit();
     if (fixedFrame) {
       const tracks = fixedFrame.phase === "intro" ? shot.intro : shot.loop;
       sampleTracks(tracks, fixedFrame.time, state);
@@ -252,6 +293,7 @@ export async function createHeroRenderer(canvas, options) {
       state.zoom *= lerp(1, shot.exit.zoom, leave);
       state.lift *= 1 - leave;
       state.fan *= 1 - leave;
+      for (const { lift } of shot.breakouts ?? []) state[lift] *= 1 - leave;
     }
     if (parallaxEnabled && fine && !fixedFrame) {
       parallax.x = THREE.MathUtils.damp(parallax.x, pointer.x, 2.4, delta);
@@ -296,8 +338,22 @@ export async function createHeroRenderer(canvas, options) {
     screen.uniforms.power.value = s.power;
     screen.uniforms.focus.value = s.focus;
     screen.uniforms.focusRect.value.set(s.focusX, s.focusY, s.focusW, s.focusH);
-    screen.uniforms.lifted.value = breakoutTiles ? s.lift : 0;
-    breakoutTiles?.update(s.lift, s.fan);
+    screen.uniforms.focusRadius.value = s.focusR;
+    // The socket follows the breakout that is out, and opens only on that breakout's own screen.
+    const active = activeBreakout(s);
+    if (active) {
+      const { rect, radius, screen: home } = active.entry;
+      screen.uniforms.socketRect.value.set(rect.x0, rect.y0, rect.x1, rect.y1);
+      screen.uniforms.radius.value = radius ?? shot.ui.radius;
+      screen.uniforms.lifted.value = screenIndex(Math.floor(s.screen)) === home ? liftOf(s, active.entry) : 0;
+      screen.uniforms.refill.value = active.entry.motion?.refill ?? 0.3;
+    } else {
+      screen.uniforms.lifted.value = 0;
+    }
+    const hover = pickTile(s);
+    for (const { entry, tiles } of breakouts) {
+      tiles.update(liftOf(s, entry), entry.fan ? s[entry.fan] : 0, delta, hover?.id === entry.id ? hover : null, camera.position, Boolean(stage?.compact));
+    }
     // Held frames breathe at their own time, so captures stay deterministic.
     caseKey?.update(fixedFrame ? 1 : delta, fixedFrame ? fixedFrame.time : performance.now() / 1000, keyHovered);
     const level = applyMood({ lights, lamp: world.lamp }, mood, { sun: s.sun, power: s.power, glow: s.glow });
@@ -328,18 +384,25 @@ export async function createHeroRenderer(canvas, options) {
     pixels.forEach((p) => centre.add(p));
     centre.divideScalar(4).multiplyScalar(base.scale).add(base.offset);
     pivot.copy(centre);
+    let band;
     {
       const w = spec.display.width / 2;
       const h = spec.display.height / 2;
       let top = Infinity;
       let bottom = -Infinity;
+      let left = Infinity;
+      let right = -Infinity;
       [[-w, h], [w, h], [w, -h], [-w, -h]].forEach(([x, y]) => {
         const p = new THREE.Vector3(x, y, 0).applyMatrix4(anchor.matrixWorld).project(camera);
+        const px = ((p.x + 1) / 2) * stage.width * base.scale + base.offset.x;
         const py = ((1 - p.y) / 2) * stage.height * base.scale + base.offset.y;
+        left = Math.min(left, px);
+        right = Math.max(right, px);
         top = Math.min(top, py);
         bottom = Math.max(bottom, py);
       });
-      const band = screenBand(stage);
+      // The band for the screen's span at its widest this frame (fully zoomed about the pivot).
+      band = screenBand(stage, { left: (left - pivot.x) * s.zoom + pivot.x, right: (right - pivot.x) * s.zoom + pivot.x });
       zoom = Math.min(s.zoom, Math.max(1, (band.bottom - band.top) / Math.max(1, bottom - top)));
       const zTop = (top - pivot.y) * zoom + pivot.y;
       const zBottom = (bottom - pivot.y) * zoom + pivot.y;
@@ -364,7 +427,6 @@ export async function createHeroRenderer(canvas, options) {
       let dy = 0;
       if (minX < bounds.left) dx = bounds.left - minX;
       if (maxX + dx > bounds.right) dx = bounds.right - maxX;
-      const band = screenBand(stage);
       if (minY + shift.y < band.top) dy = band.top - (minY + shift.y);
       if (maxY + shift.y + dy > band.bottom) dy = band.bottom - (maxY + shift.y);
       shift.x = dx * s.focus;
@@ -374,10 +436,33 @@ export async function createHeroRenderer(canvas, options) {
     camera.updateProjectionMatrix();
 
     post.render(scene, camera, mood.grade, fixedFrame ? 0 : frame % 97, level.room, { ink: s.ink, real: s.real, sketch: mood.sketch });
+    if (qaReport) checkHud(s, anchor);
     updateKey();
     frame += 1;
     onFrame?.(frame, s);
     return true;
+  }
+
+  // HUD checks: the screen quad and the lifted strip, projected as framed, against the HUD text boxes.
+  const qaReport = qa ? { frames: 0, hits: 0, last: [] } : null;
+  function checkHud(s, anchor) {
+    const w = spec.display.width / 2;
+    const h = spec.display.height / 2;
+    const quad = [[-w, -h], [w, -h], [w, h], [-w, h]].map(([x, y]) => new THREE.Vector3(x, y, 0).applyMatrix4(anchor.matrixWorld));
+    const screenQuad = convexHull(projectPoints(quad, camera, stage.width, stage.height).map((p) => p.clone()));
+    const tiles = breakouts.flatMap(({ entry, tiles: breakout }) => (liftOf(s, entry) > 0.05 ? breakout.corners() : []));
+    const slab = tiles.length ? convexHull(projectPoints(tiles, camera, stage.width, stage.height).map((p) => p.clone())) : null;
+    qaReport.frames += 1;
+    const hits = [];
+    // Only HUD text boxes (copy, actions, footer) count; the chrome bars are glass over the top and bottom edges.
+    stage.keepOut.slice(0, 3).forEach((box, i) => {
+      if (s.power > 0.05 && polygonHitsBox(screenQuad, box)) hits.push(`screen×${i}`);
+      if (slab && polygonHitsBox(slab, box)) hits.push(`strip×${i}`);
+    });
+    if (hits.length) {
+      qaReport.hits += 1;
+      qaReport.last = hits;
+    }
   }
 
   let raf = 0;
@@ -425,6 +510,11 @@ export async function createHeroRenderer(canvas, options) {
     camera,
     state,
     bench,
+    qa: qaReport,
+    /** The live stage the frame is framed against (for the HUD checks). */
+    get stage() {
+      return stage;
+    },
     /** Renders `count` frames now (held frames, demand rendering) and resolves after the last. */
     async renderFrames(count = 1) {
       for (let i = 0; i < count; i += 1) {
@@ -470,6 +560,8 @@ export async function createHeroRenderer(canvas, options) {
       document.removeEventListener("visibilitychange", onVisibility);
       environment.dispose();
       textures.forEach((texture) => texture.dispose());
+      // The breakouts' detail crops live in their tiles' uniforms, which the material sweep below never sees.
+      details.forEach((texture) => texture?.dispose());
       scene.traverse((child) => {
         child.geometry?.dispose();
         const materials = Array.isArray(child.material) ? child.material : child.material ? [child.material] : [];
@@ -483,3 +575,8 @@ export async function createHeroRenderer(canvas, options) {
     },
   };
 }
+
+// The site's entry points (src/components/HeroCanvas.tsx): one module, typed by index.d.ts.
+export { watchStage } from "./framing.js";
+export { heroPalette, readCssToken, resolvePalette } from "./palette.js";
+export { getShot } from "./shots/index.js";

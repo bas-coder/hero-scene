@@ -55,7 +55,7 @@ The header and hero HUD follow the bricxlabs.com reference sizes (measured from 
 | Hero badge | `--badge-height`, pulse `--duration-2000` | 28px · the dot sends out a fading ring |
 | Hero actions | `--hero-action-height`, `--text-control-lg-size`, gap `--space-2xs` + `--keycap-outline-width` | 44px · 16px · visible 4px gap, equal widths |
 | Hero headline | `--text-hero-size` | ≤64px desktop, ≤48px tablet, ≤46px mobile (always below the reference's 72px) |
-| Hero name line | `.hero-line--name`, same tokens as the headline | "Abbas Alabura –" opens the `<h1>` on its own line, then the sentence follows with the role in Source Serif 4 Italic (olenkevich.com, "high" mode). It shares the char reveal, the weight hover and the HUD contrast check |
+| Hero name line | `.hero-line--name`, same tokens as the headline | "Abbas Alabura -" opens the `<h1>` on its own line, then the sentence follows with the role in Source Serif 4 Italic (olenkevich.com, "high" mode). It shares the char reveal, the weight hover and the HUD contrast check |
 | Hero meta | `--text-meta-size`, `--space-hero-footer-gap`, `--space-hero-bottom` | 12px (11px mobile) · 64px below the buttons (56px mobile) · 40px from the bottom edge, no divider |
 
 The keycap draws a 1.5px outline ring outside its box, so any gap beside a keycap adds `--keycap-outline-width` to keep the visible space equal to the reference.
@@ -63,6 +63,7 @@ The keycap draws a 1.5px outline ring outside its box, so any gap beside a keyca
 **Current view.** The pill for the view you're on fills with `--action-current` and white ink (`--action-on-current`), with `--action-current-hover` on hover.
 - **Which pill:** `SiteHeader` reads the URL. `/` and case studies (`/work/...`) mark Work; `/library` marks Library. The link gets `aria-current="page"`, which is also the CSS hook.
 - **Index and Yard:** they still scroll within the home page, so they join the mapping once they become views of their own.
+- **Over the hero:** the home hero declares `data-header-current="glass"`, and the current pill keeps the same glass as the others there. `SiteHeader`'s tone sample also sets `data-current` (`glass` or `accent`) on the pills, so the red fades in once the hero scrolls out from behind them. The first paint guesses from the URL: `glass` on `/`, `accent` elsewhere. `aria-current` stays either way.
 - **Colour:** red-600, not the red-500 accent. White 14px labels pass AA at 5.0:1 on red-600 and fail at 4.1:1 on red-500. It's the same in both themes and both header tones, and red appears nowhere else in the HUD, so it only ever means "you are here".
 - **Mobile menu:** a `--current-dot-size` red dot before the current item.
 

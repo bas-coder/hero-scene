@@ -20,10 +20,10 @@
     linear-gradient(90deg, color-mix(in srgb, var(--hero-scrim-tint) 50%, transparent), transparent 76%);
 }
 
-[data-hero-shot="flable"] {
-  --hero-scrim-tint: var(--scene-flable-shadow);
-  /* The canvas fades in over this, so it matches the intro's first frame: lid shut, dusk in the cove. */
-  --gradient-hero-dusk: radial-gradient(ellipse 60% 55% at 64% 44%, var(--scene-flable-cove-low), var(--scene-flable-shadow) 62%, var(--scene-flable-deep));
+/* The scrim darkens toward the world's own black (a dark lens falloff), never a shot colour: tinting it with the
+   shot's violet laid a dull purple haze over the scene. */
+[data-hero-shot] {
+  --hero-scrim-tint: var(--scene-hero-world-void);
 }
 
 /* Gradients and shadows, built from theme colors */
@@ -154,8 +154,10 @@
   --duration-200: 0.2s;
   --duration-2000: 2s;
 
-  /* Tooltip: dark glass from the HUD family, denser so it reads over light sections (Bricx reference). */
-  --tooltip-fill: color-mix(in srgb, var(--color-stone-900) var(--alpha-70), transparent);
+  /* Tooltip: dark frosted glass from the HUD family. The fill stays light enough that the blur behind it shows (at 70%
+     it read as a flat dark chip); the card-glass blur keeps light sections behind it soft, so the ink holds. */
+  --tooltip-fill: color-mix(in srgb, var(--color-stone-900) var(--alpha-45), transparent);
+  --tooltip-fill-opaque: color-mix(in srgb, var(--color-stone-900) var(--alpha-92), transparent);
   --tooltip-line: color-mix(in srgb, var(--color-stone-50) var(--alpha-8), transparent);
   --tooltip-ink: var(--color-stone-50);
   --tooltip-ink-muted: color-mix(in srgb, var(--color-stone-50) var(--alpha-60), transparent);
@@ -163,7 +165,7 @@
   --tooltip-chip-fill: color-mix(in srgb, var(--color-stone-50) var(--alpha-10), transparent);
   --tooltip-icon-fill: var(--color-stone-50);
   --tooltip-icon-ink: var(--color-stone-900);
-  --tooltip-blur: var(--glass-icon-blur);
+  --tooltip-blur: var(--glass-card-blur);
   --shadow-tooltip: 0 var(--scale-10) calc(var(--scale-14) + var(--scale-1)) calc(var(--scale-1) * -3) color-mix(in srgb, var(--color-stone-900) var(--alpha-10), transparent), 0 var(--scale-4) var(--scale-6) calc(var(--scale-4) * -1) color-mix(in srgb, var(--color-stone-900) var(--alpha-10), transparent);
   --shadow-window: var(--space-16) var(--space-16) 0 var(--line-emphasis);
   --blur-background: var(--scale-8);

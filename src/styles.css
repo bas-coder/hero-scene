@@ -179,8 +179,9 @@ img {
   letter-spacing: var(--text-control-tracking);
 }
 
-/* The view you're on: solid red accent, so the glass blur behind it is dropped. */
-.header-pills a[aria-current] {
+/* The view you're on: solid red accent, so the glass blur behind it is dropped. Over the home hero
+   (data-current="glass") it keeps the same glass as the other pills; SiteHeader flips it once the hero scrolls past. */
+.header-pills[data-current="accent"] a[aria-current] {
   color: var(--action-on-current);
   background: var(--action-current);
   -webkit-backdrop-filter: none;
@@ -238,9 +239,9 @@ img {
   background: var(--surface-canvas);
 }
 
-/* A shot paints its first frame in CSS, so the canvas fades in over the same dusk instead of a flat fill. */
+/* The hero's world starts from black (the scene's own void), so the canvas fades in over the same black. */
 .hero[data-hero-shot] .hero-visual {
-  background: var(--gradient-hero-dusk, var(--surface-canvas));
+  background: var(--scene-hero-world-void);
 }
 
 .hero-canvas {
@@ -265,6 +266,41 @@ img {
   font-weight: var(--font-weight-medium);
   line-height: var(--text-line-1_375);
   white-space: nowrap;
+}
+
+/* Without backdrop blur the light fill would let busy imagery through: tooltips fall back to a near-opaque fill. */
+@supports not ((backdrop-filter: none) or (-webkit-backdrop-filter: none)) {
+  .case-key-tip,
+  .client-tooltip {
+    background: var(--tooltip-fill-opaque);
+  }
+}
+
+/* The key's tooltip floats over the canvas, anchored above the key (placed by HeroCanvas each frame). It shows after
+   a short hover and lingers through a grace period (useHoverIntent), fading and lifting in. */
+.hero-key-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, calc(-100% + var(--space-8)));
+  transition:
+    opacity var(--duration-200) var(--ease-out),
+    transform var(--duration-200) var(--ease-out);
+}
+
+.hero-key-tip[data-visible="true"] {
+  opacity: 1;
+  transform: translate(-50%, -100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-key-tip {
+    transform: translate(-50%, -100%);
+    transition: opacity var(--duration-200) linear;
+  }
 }
 
 /* The case study from the keyboard: hidden until focused, then it appears where the key's tooltip would. */
@@ -510,7 +546,7 @@ img {
     backdrop-filter: var(--glass-icon-backdrop-hover);
   }
 
-  .header-pills a[aria-current]:hover {
+  .header-pills[data-current="accent"] a[aria-current]:hover {
     background: var(--action-current-hover);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;

@@ -9,6 +9,9 @@ import * as THREE from "three";
 
 const hudSelectors = [".hero-copy", ".hero-actions", ".hero-footer"];
 const chromeSelectors = [".site-header", ".mobile-header", ".mobile-dock"];
+// The copy's text, measured line by line (its blocks run the full headline width; the words don't).
+const lineSelectors = [".availability", ".hero-line"];
+const buttonSelectors = [".hero-actions > *"];
 
 function boxOf(element, origin) {
   const rect = element.getBoundingClientRect();
@@ -18,8 +21,30 @@ function boxOf(element, origin) {
   return { left: rect.left - origin.left, top: rect.top - origin.top, right: rect.right - origin.left, bottom: rect.bottom - origin.top };
 }
 
-/** Builds a Stage from HUD boxes already measured relative to the canvas (the DOM path and the lab share this). */
-export function stageFromBoxes({ width, height, hud = [], chrome = [] }, version = 0) {
+/** The visual lines of an element's text (Range rects merged per line), relative to the canvas. */
+function lineBoxes(element, origin) {
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  const rows = [];
+  for (const rect of range.getClientRects()) {
+    if (!rect.width || !rect.height) continue;
+    const row = rows.find((box) => rect.top < box.bottom - 2 && rect.bottom > box.top + 2);
+    if (row) {
+      row.left = Math.min(row.left, rect.left);
+      row.right = Math.max(row.right, rect.right);
+      row.top = Math.min(row.top, rect.top);
+      row.bottom = Math.max(row.bottom, rect.bottom);
+    } else rows.push({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom });
+  }
+  return rows.map((box) => ({ left: box.left - origin.left, top: box.top - origin.top, right: box.right - origin.left, bottom: box.bottom - origin.top }));
+}
+
+/**
+ * Builds a Stage from HUD boxes already measured relative to the canvas (the DOM path and the lab share this).
+ * `text` holds the copy's text line by line and its buttons: on desktop the lit screen may sit beside a short line,
+ * never behind one (screenBand).
+ */
+export function stageFromBoxes({ width, height, hud = [], chrome = [], text = [] }, version = 0) {
   const keepOut = [...hud];
   let chromeTop = 0;
   let chromeBottom = height;
@@ -39,7 +64,7 @@ export function stageFromBoxes({ width, height, hud = [], chrome = [] }, version
     bottom: compact ? hudTop - margin : chromeBottom - margin,
   };
   const footer = hud[2];
-  return { width, height, bounds, keepOut, compact, chromeTop, footerTop: footer ? footer.top : chromeBottom, version };
+  return { width, height, bounds, keepOut, text, compact, chromeTop, footerTop: footer ? footer.top : chromeBottom, version };
 }
 
 /**
@@ -78,7 +103,13 @@ export function measureStage(canvas, version) {
     const box = boxOf(element, getComputedStyle(element).position === "fixed" ? viewport : origin);
     if (box) chrome.push(box);
   });
-  return stageFromBoxes({ width: origin.width, height: origin.height, hud, chrome }, version);
+  const text = [];
+  lineSelectors.forEach((selector) => section.querySelectorAll(selector).forEach((element) => text.push(...lineBoxes(element, origin))));
+  buttonSelectors.forEach((selector) => section.querySelectorAll(selector).forEach((element) => {
+    const box = boxOf(element, origin);
+    if (box) text.push(box);
+  }));
+  return stageFromBoxes({ width: origin.width, height: origin.height, hud, chrome, text }, version);
 }
 
 /** Keeps a live Stage for a canvas: resize, HUD reflow and late fonts all re-measure. Returns { current, dispose }. */
@@ -178,18 +209,32 @@ export function polygonHitsBox(polygon, box) {
 
 const inflate = (box, by) => ({ left: box.left - by, top: box.top - by, right: box.right + by, bottom: box.bottom + by });
 
-/** The lit screen's vertical band: under the header and above the headline, so white UI never sits behind white type. */
-export function screenBand(stage) {
+/**
+ * The lit screen's vertical band: under the header and above the headline, so white UI never sits behind white type.
+ * On desktop, given the screen's horizontal span, the band ends at the first text line (or button) that span crosses:
+ * the screen may come down beside the short opening lines (the availability pill, the name), never behind a line.
+ * Phones keep the whole copy block below the screen.
+ */
+export function screenBand(stage, span = null) {
   const gap = stage.height * 0.02;
+  const top = stage.chromeTop + gap;
+  if (span && !stage.compact && stage.text?.length) {
+    let bottom = stage.footerTop - gap;
+    for (const box of stage.text) {
+      if (box.right > span.left - gap && box.left < span.right + gap) bottom = Math.min(bottom, box.top - gap);
+    }
+    return { top, bottom };
+  }
   const copy = stage.keepOut[0];
-  return { top: stage.chromeTop + gap, bottom: (copy ? copy.top : stage.footerTop) - gap };
+  return { top, bottom: (copy ? copy.top : stage.footerTop) - gap };
 }
 
 /**
  * Finds the largest framing that keeps the device inside the stage and clear of every HUD box,
- * preferring an anchor point (as a share of the canvas). Runs only when the stage changes.
+ * preferring an anchor point (as a share of the canvas). `wander` caps how far (a share of the width) the anchor may
+ * move to buy size. Runs only when the stage changes.
  */
-export function solveFraming(projected, stage, anchor, maxWidth = Infinity, screen) {
+export function solveFraming(projected, stage, anchor, maxWidth = Infinity, screen, wander = 0.22) {
   const shape = convexHull(projected);
   const xs = shape.map((p) => p.x);
   const ys = shape.map((p) => p.y);
@@ -204,9 +249,17 @@ export function solveFraming(projected, stage, anchor, maxWidth = Infinity, scre
     if (spanX * scale > maxWidth) return null;
     const offset = target.clone().sub(centre.clone().multiplyScalar(scale));
     if (screen) {
+      let left = Infinity;
+      let right = -Infinity;
+      for (const p of screen.points) {
+        const x = p.x * scale + offset.x;
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+      }
+      const band = screenBand(screen.stage, { left, right });
       for (const p of screen.points) {
         const y = p.y * scale + offset.y;
-        if (y < screen.top || y > screen.bottom) return null;
+        if (y < band.top || y > band.bottom) return null;
       }
     }
     for (let i = 0; i < shape.length; i += 1) {
@@ -221,7 +274,9 @@ export function solveFraming(projected, stage, anchor, maxWidth = Infinity, scre
   const preferred = new THREE.Vector2(anchor.x * stage.width, anchor.y * stage.height);
   const candidates = [];
   for (let x = 0.3; x <= 0.8001; x += 0.025) {
-    for (let y = 0.2; y <= 0.62; y += 0.02) candidates.push(new THREE.Vector2(x * stage.width, y * stage.height));
+    // Down to 0.1 and finely stepped: on a short window the device rises a few pixels to keep its size where it
+    // belongs, and the fit there can be only a few pixels wide.
+    for (let y = 0.1; y <= 0.62; y += 0.005) candidates.push(new THREE.Vector2(x * stage.width, y * stage.height));
   }
   candidates.sort((a, b) => a.distanceToSquared(preferred) - b.distanceToSquared(preferred));
 
@@ -233,7 +288,7 @@ export function solveFraming(projected, stage, anchor, maxWidth = Infinity, scre
     let found = null;
     // Allow the anchor to wander a little more as the device grows; the best size wins, then nearness.
     for (const target of candidates) {
-      if (target.distanceTo(preferred) > stage.width * 0.22) break;
+      if (target.distanceTo(preferred) > stage.width * wander) break;
       found = fits(scale, target);
       if (found) break;
     }

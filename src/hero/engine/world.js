@@ -1,8 +1,9 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
-import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { mergeGeometries, mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { screenResponse } from "./mood.js";
 import { rng } from "./rng.js";
-import { contactShadow, cork, deskRoughness, floorFalloff, leatherBump, speckle } from "./textures.js";
+import { contactShadow, cork, deskFalloff, deskRoughness, floorFalloff, leatherBump, speckle } from "./textures.js";
 
 /**
  * The persistent world every shot shares. Scene units are 10 cm; the laptop sits at the origin with its front
@@ -44,6 +45,19 @@ function registry() {
 }
 
 /**
+ * Blending for shades laid over the room plate: they darken colour but never touch alpha. Alpha marks the
+ * plate's ungraded path (post.js); a shade that wrote it would push the plate under it into the graded world,
+ * where the shot's saturation and gain clip it to pure magenta.
+ */
+export const keepMask = {
+  blending: THREE.CustomBlending,
+  blendSrc: THREE.SrcAlphaFactor,
+  blendDst: THREE.OneMinusSrcAlphaFactor,
+  blendSrcAlpha: THREE.ZeroFactor,
+  blendDstAlpha: THREE.OneFactor,
+};
+
+/**
  * A contact shadow on the surface under an object: a soft dark rounded rectangle a little larger than its
  * footprint (width × depth, scene units), laid flat at `y`. Grounds things where the lamp's shadow map is too
  * coarse to (rule 7).
@@ -53,12 +67,28 @@ function groundShadow(width, depth, strength, y = 0) {
   shadowTexture ??= contactShadow();
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(width, depth),
-    new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false, opacity: strength, color: new THREE.Color(0, 0, 0) }),
+    new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false, opacity: strength, color: new THREE.Color(0, 0, 0), ...keepMask }),
   );
   mesh.rotation.x = -Math.PI / 2;
   mesh.position.y = y + 0.003;
   mesh.renderOrder = -1;
   return mesh;
+}
+
+/** The under-desk occlusion: dark under the edge, fading out downward (alpha only). */
+function underShade() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 4;
+  canvas.height = 64;
+  const context = canvas.getContext("2d");
+  const image = context.createImageData(4, 64);
+  for (let y = 0; y < 64; y += 1) {
+    const t = y / 63;
+    const a = Math.round(255 * 0.62 * (1 - t) ** 2);
+    for (let x = 0; x < 4; x += 1) image.data[(y * 4 + x) * 4 + 3] = a;
+  }
+  context.putImageData(image, 0, 0);
+  return new THREE.CanvasTexture(canvas);
 }
 
 /** Desk (bevelled laminate slab), legs, floor. */
@@ -69,18 +99,25 @@ function buildDesk(world, palette, dress) {
   const roughnessMap = deskRoughness();
   // The top face's UVs span 18 × 5 units: repeat less across the depth so the grain stays round, not streaked.
   roughnessMap.repeat.set(6, 6 * (5 / 18));
-  const material = dress.add("desk", new THREE.MeshPhysicalMaterial({ color: color(palette.desk), roughnessMap, roughness: 1, clearcoat: 0.45, clearcoatRoughness: 0.2 }));
+  // The top falls off away from the lamp (a baked albedo ramp across its width): lit around the lamp and the
+  // cups, quieter toward the laptop's left, where the headline sits (rule 47).
+  const material = dress.add("desk", new THREE.MeshPhysicalMaterial({ color: color(palette.desk), map: deskFalloff(), roughnessMap, roughness: 1, clearcoat: 0.45, clearcoatRoughness: 0.2 }));
   dress.add("deskRoughness", material, "roughness");
-  const desk = new THREE.Mesh(new RoundedBoxGeometry(18, 0.2, 5.0, 5, 0.08), material);
+  // The desk sees the screen only at a grazing angle, where a real panel emits far less than the area light.
+  screenResponse(material, { diffuse: palette.deskScreenSpill ?? 1, specular: palette.deskScreenSpill ?? 1 });
+  const top = new RoundedBoxGeometry(18, 0.2, 5.0, 5, 0.08);
+  // The front face (and the lip rolling onto it) samples the falloff's front-edge row: lit by the room behind the
+  // viewer, it read as a bright band right over the headline once the camera zooms in.
+  const uv = top.getAttribute("uv");
+  const normal = top.getAttribute("normal");
+  for (let i = 0; i < uv.count; i += 1) if (normal.getZ(i) > 0.35) uv.setY(i, 0);
+  const desk = new THREE.Mesh(top, material);
   desk.position.set(0.6, -0.1, -1.1);
-  desk.receiveShadow = true;
+  // It casts too (its underside, three.js's default shadow side), so the lamp never lights the frame through it.
+  desk.castShadow = desk.receiveShadow = true;
   desk.name = "desk";
   world.add(desk);
-  for (const [x, z] of [[5.9, 1.15], [-4.7, 1.15]]) {
-    const leg = new THREE.Mesh(new RoundedBoxGeometry(0.36, 7.4, 0.36, 2, 0.03), material);
-    leg.position.set(x, -3.9, z);
-    world.add(leg);
-  }
+  buildFrame(world, palette, dress);
   // The floor is dark in the desk's shade and rises toward the wall and the bed's glow (a baked light falloff).
   // Seen at a grazing angle, a rough floor's sheen (the practical rim behind it, the room's reflection) would
   // outweigh its albedo and flatten it into one sheet, so it is purely diffuse (Lambert: no specular, no
@@ -95,13 +132,187 @@ function buildDesk(world, palette, dress) {
   world.add(floor);
   // The laptop rests on its feet at the origin: a soft shadow under the whole base.
   world.add(groundShadow(3.5, 2.55, 0.55));
+  // Occlusion under the desk: the top shades what lies beneath its front edge (the room seen under the desk
+  // would otherwise glow right up to the edge and the slab would float).
+  const under = new THREE.Mesh(new THREE.PlaneGeometry(18, 3), new THREE.MeshBasicMaterial({ map: underShade(), transparent: true, depthWrite: false, color: new THREE.Color(0, 0, 0), ...keepMask }));
+  under.position.set(0.6, -1.7, 1.38);
+  under.renderOrder = -1;
+  world.add(under);
   return desk;
 }
 
 /**
+ * The desk's base: a powder-coated steel frame under the top. Four slim legs (3 cm square) on rubber glides, a
+ * slim 3.5 cm apron with a 3 mm reveal against the legs, a low stretcher across the back and low side bars. The
+ * frame sits 5 cm inside the top's front and back edges, so a shadow gap reads under the top. It is narrower
+ * than the top (which overhangs it at both ends, off frame), so both front legs stay in view through the loop at
+ * desktop sizes; on phones the right leg runs to the floor. It sits in the top's shade: no lamp light, less of
+ * the environment, and paint that fades toward the floor (vertex colours), so it stays dim behind the headline.
+ * The floor carries soft shadows under the feet and the whole frame.
+ */
+function buildFrame(world, palette, dress) {
+  const material = dress.add("frame", new THREE.MeshStandardMaterial({ color: color(palette.frame), roughness: 0.5, envMapIntensity: 0.6, vertexColors: true }));
+  const glide = dress.add("prop", new THREE.MeshStandardMaterial({ color: color(palette.prop), roughness: 0.7 }));
+  const top = -0.2;
+  const floor = -7.6;
+  const leg = 0.3;
+  const [left, right] = [-3.9, 3.3];
+  const [front, back] = [0.75, -2.95];
+  const parts = [];
+  const box = (width, height, depth, x, y, z, radius = 0.025) => {
+    const geometry = new RoundedBoxGeometry(width, height, depth, 2, radius);
+    geometry.translate(x, y, z);
+    parts.push(geometry);
+  };
+  const glideHeight = 0.08;
+  for (const x of [left, right]) {
+    for (const z of [front, back]) {
+      box(leg, top - floor - glideHeight, leg, x, (top + floor + glideHeight) / 2, z);
+      const foot = new THREE.Mesh(new RoundedBoxGeometry(leg - 0.04, glideHeight, leg - 0.04, 2, 0.02), glide);
+      foot.position.set(x, floor + glideHeight / 2, z);
+      foot.castShadow = foot.receiveShadow = true;
+      world.add(foot);
+      const shadow = groundShadow(1.1, 1.1, 0.6, floor);
+      shadow.position.x = x;
+      shadow.position.z = z;
+      world.add(shadow);
+    }
+  }
+  // Apron: 3.5 cm deep and 2 cm thick, 3 mm inside the legs' outer faces.
+  const apron = { height: 0.35, thickness: 0.2, reveal: 0.03 };
+  const span = right - left - leg;
+  const run = front - back - leg;
+  const apronY = top - apron.height / 2;
+  const inset = leg / 2 - apron.reveal - apron.thickness / 2;
+  box(span, apron.height, apron.thickness, (left + right) / 2, apronY, front + inset);
+  box(span, apron.height, apron.thickness, (left + right) / 2, apronY, back - inset);
+  box(apron.thickness, apron.height, run, left - inset, apronY, (front + back) / 2);
+  box(apron.thickness, apron.height, run, right + inset, apronY, (front + back) / 2);
+  // Stretchers about 10 cm off the floor: across the back, and along both sides.
+  const low = floor + 1.0;
+  box(span, 0.24, 0.18, (left + right) / 2, low, back);
+  box(0.18, 0.24, run, left, low, (front + back) / 2);
+  box(0.18, 0.24, run, right, low, (front + back) / 2);
+  const under = groundShadow(right - left + 2.2, front - back + 2.2, 0.32, floor - 0.001);
+  under.position.set((left + right) / 2, under.position.y, (front + back) / 2);
+  world.add(under);
+  const geometry = mergeGeometries(parts);
+  const position = geometry.getAttribute("position");
+  const shade = new Float32Array(position.count * 3);
+  for (let i = 0; i < position.count; i += 1) {
+    const t = Math.min(1, Math.max(0, (top - position.getY(i)) / (top - floor)));
+    shade.fill(1 - 0.72 * t * (2 - t), i * 3, i * 3 + 3);
+  }
+  geometry.setAttribute("color", new THREE.BufferAttribute(shade, 3));
+  const frame = new THREE.Mesh(geometry, material);
+  frame.name = "desk-frame";
+  frame.castShadow = frame.receiveShadow = true;
+  world.add(frame);
+}
+
+/**
+ * An iPhone 17 Pro lying face down (71.9 × 150 mm), its back up. The anodised aluminium unibody has flat sides with
+ * tight edges, and its full-width camera plateau runs flush with the frame across the top, deep enough to leave
+ * clear margins around the lenses. The plateau carries the three lenses in a triangle on the left (each standing
+ * proud in a metal housing with a bright rim, dark coated glass and the front element) and, on the right, the
+ * flash, mic and LiDAR. Below it sits the frosted glass panel, within a few percent of the aluminium's value (a
+ * lighter panel reads as a lit screen, which turns the phone face up). Its top edge is straight under the
+ * plateau. On the bottom face, the USB-C port between the speaker and mic holes. No side keys (at 1x they read
+ * as notches cut in the rail) and no logo.
+ * The body is 8 mm, not 8.75: at this angle the contact shadow adds to the near face, and the true depth read as
+ * an old phone in a case. Phone-local: x across, z along (the top at -z), y up from the notebook its screen lies
+ * on.
+ */
+function buildPhone(palette, dress) {
+  const phone = new THREE.Group();
+  phone.name = "phone";
+  // Satin, partly diffuse and light: mirror metal stripes the thin sides and carries the window's violet as a neon
+  // rail (it read as a purple phone, twice as saturated as the laptop); this reads as silver catching the light.
+  const aluminium = dress.add("phone", new THREE.MeshStandardMaterial({ color: color(palette.phone), metalness: 0.65, roughness: 0.4, envMapIntensity: 0.65 }));
+  // The lens rims: the same silver, a little brighter and less metallic so they read as rings at 1x.
+  const rimMetal = dress.add("phone", new THREE.MeshStandardMaterial({ color: color(palette.phone), metalness: 0.4, roughness: 0.3 }));
+  const glass = dress.add("phoneGlass", new THREE.MeshStandardMaterial({ color: color(palette.phoneGlass), metalness: 0.5, roughness: 0.55, envMapIntensity: 0.6 }));
+  // Deep black sapphire: a clearcoat at this grazing angle mirrored the pink room and turned the lenses to lilac.
+  const lensGlass = dress.add("graphite", new THREE.MeshPhysicalMaterial({ color: color(palette.graphite), roughness: 0.1, clearcoat: 0.3, clearcoatRoughness: 0.08, envMapIntensity: 0.25 }));
+  // The lens rims and the flash catch light whatever the room reflects into the metal: a pale, frosted finish.
+  const bright = dress.add("tile", new THREE.MeshStandardMaterial({ color: color(palette.tile), roughness: 0.3 }));
+  const port = dress.add("prop", new THREE.MeshStandardMaterial({ color: color(palette.prop), roughness: 0.8 }));
+  const [width, length, height] = [0.719, 1.5, 0.08];
+  const top = -length / 2;
+  phone.add(new THREE.Mesh(roundedSlab({ width, depth: length, height, radius: 0.115, bevel: 0.014 }), aluminium));
+
+  // The plateau: one raised band of the unibody, edge to edge across the top, its far corners the body's own.
+  const plateau = { length: 0.47, rise: 0.022, inset: 0.001 };
+  const band = new THREE.Mesh(roundedSlab({ width: width - plateau.inset * 2, depth: plateau.length, height: plateau.rise, radius: [0.06, 0.114], bevel: 0.011 }), aluminium);
+  band.position.set(0, height - 0.002, top + plateau.inset + plateau.length / 2);
+  phone.add(band);
+  const deck = height - 0.002 + plateau.rise;
+
+  // The glass panel: about 2 mm inside the sides and the bottom, its straight top edge right under the plateau.
+  const panelTop = top + plateau.inset + plateau.length + 0.006;
+  const panelLength = length / 2 - 0.018 - panelTop;
+  const panel = new THREE.Mesh(roundedSlab({ width: width - 0.036, depth: panelLength, height: 0.002, radius: [0.097, 0.012], bevel: 0.0008 }), glass);
+  panel.position.set(0, height - 0.001, panelTop + panelLength / 2);
+  phone.add(panel);
+
+  // Lenses: two stacked and one beside them (about 23% of the width each, as on the phone), each standing about
+  // 1.7 mm proud in its housing: a silver rim around deep black glass, a faint inner ring, the front element.
+  const lensZ = top + plateau.inset + plateau.length / 2;
+  const lens = (x, z) => {
+    const housing = new THREE.Mesh(new THREE.CylinderGeometry(0.087, 0.092, 0.017, 48), aluminium);
+    housing.position.set(x, deck + 0.0085, z);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.082, 0.0065, 8, 48), rimMetal);
+    rim.rotation.x = Math.PI / 2;
+    rim.position.set(x, deck + 0.017, z);
+    const cover = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.004, 48), lensGlass);
+    cover.position.set(x, deck + 0.0165, z);
+    const element = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.042, 0.003, 32), lensGlass);
+    element.position.set(x, deck + 0.019, z);
+    const inner = new THREE.Mesh(new THREE.TorusGeometry(0.054, 0.0018, 6, 40), port);
+    inner.rotation.x = Math.PI / 2;
+    inner.position.set(x, deck + 0.019, z);
+    phone.add(housing, rim, cover, element, inner);
+  };
+  const column = -width / 2 + plateau.inset + 0.032 + 0.092;
+  lens(column, lensZ - 0.1);
+  lens(column, lensZ + 0.1);
+  lens(column + 0.175, lensZ);
+  // Flash (a pale frosted window) and LiDAR, each set in a thin metal ring, and the mic, on the plateau's right.
+  const dot = (radius, material, x, z, rise = 0.003) => {
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, rise, 24), material);
+    mesh.position.set(x, deck + rise / 2, z);
+    phone.add(mesh);
+  };
+  const right = width / 2 - plateau.inset - 0.08;
+  dot(0.034, aluminium, right, lensZ - 0.1, 0.004);
+  dot(0.027, bright, right, lensZ - 0.1, 0.005);
+  dot(0.007, port, right, lensZ, 0.001);
+  dot(0.036, aluminium, right, lensZ + 0.1, 0.004);
+  dot(0.029, lensGlass, right, lensZ + 0.1, 0.005);
+
+  // The bottom face: the USB-C port between two rows of speaker and mic holes, in a dark matte finish.
+  const end = length / 2 - 0.0012;
+  // A stadium (pill) opening: a thin rounded slab stood up to face out of the bottom face.
+  const usb = new THREE.Mesh(roundedSlab({ width: 0.072, depth: 0.022, height: 0.003, radius: 0.0109, bevel: 0.0008 }), port);
+  usb.rotation.x = Math.PI / 2;
+  usb.position.set(0, height / 2, end - 0.0015);
+  phone.add(usb);
+  const hole = new THREE.CylinderGeometry(0.0055, 0.0055, 0.004, 12);
+  hole.rotateX(Math.PI / 2);
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 6; i += 1) {
+      const mesh = new THREE.Mesh(hole, port);
+      mesh.position.set(side * (0.07 + i * 0.021), height / 2, end);
+      phone.add(mesh);
+    }
+  }
+  return phone;
+}
+
+/**
  * A hardcover notebook (A5, about 1.3 cm): leather boards around a cream page block, a rounded spine on the
- * left, an elastic band near the right edge. On it, a phone lying face down: its aluminium back with a camera
- * island (the reference shows a light slab on the notebook, not a dark screen).
+ * left, an elastic band near the right edge. On it, an iPhone lying face down (buildPhone; the reference shows a
+ * light slab on the notebook, not a dark screen).
  */
 function buildNotebook(world, palette, dress) {
   const group = new THREE.Group();
@@ -133,28 +344,23 @@ function buildNotebook(world, palette, dress) {
     group.add(mesh);
   }
 
-  const phone = new THREE.Group();
-  const aluminium = dress.add("phone", new THREE.MeshStandardMaterial({ color: color(palette.phone), metalness: 1, roughness: 0.26 }));
-  const lens = new THREE.MeshStandardMaterial({ color: color(palette.prop), roughness: 0.06 });
-  dress.add("prop", lens);
-  const body = new THREE.Mesh(roundedSlab({ width: 0.75, depth: 1.55, height: 0.08, radius: 0.11, bevel: 0.025 }), aluminium);
-  // Camera island at the back's top-left: frosted glass over the body, two lenses and a flash.
-  const island = new THREE.Mesh(roundedSlab({ width: 0.32, depth: 0.32, height: 0.014, radius: 0.075, bevel: 0.006 }), new THREE.MeshStandardMaterial({ color: color(palette.phone), metalness: 0.6, roughness: 0.22 }));
-  dress.add("phone", island.material);
-  island.position.set(-0.375 + 0.05 + 0.16, 0.08, -0.775 + 0.05 + 0.16);
-  phone.add(body, island);
-  for (const [x, z, r] of [[-0.06, -0.06, 0.058], [-0.06, 0.07, 0.058], [0.07, 0.0, 0.03]]) {
-    const disc = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.016, 32), lens);
-    disc.position.set(island.position.x + x, 0.094 + 0.008, island.position.z + z);
-    phone.add(disc);
-  }
-  phone.position.set(0.12, thickness, -0.06);
-  phone.rotation.y = THREE.MathUtils.degToRad(-7);
+  const phone = buildPhone(palette, dress);
+  // Turned about 30° so its long side and the plateau's step show in profile: pointing straight away from the
+  // camera, 150 mm foreshortens to a short slab and the plateau to a hairline. Clear of the elastic band, which
+  // otherwise ran out from under the plateau like a cable.
+  phone.position.set(-0.07, thickness, -0.04);
+  phone.rotation.y = THREE.MathUtils.degToRad(-28);
   phone.traverse((child) => {
     child.castShadow = child.receiveShadow = true;
   });
   group.add(phone);
-  const phoneShadow = groundShadow(0.92, 1.72, 0.6, thickness);
+  // Tight to the phone (a wider shadow reads as a plinth under it), with a darker contact line right at its edge.
+  const phoneShadow = groundShadow(0.78, 1.56, 0.7, thickness);
+  const phoneContact = groundShadow(0.82, 1.6, 0.55, thickness + 0.0005);
+  phoneContact.position.x = phone.position.x;
+  phoneContact.position.z = phone.position.z;
+  phoneContact.rotation.z = phone.rotation.y;
+  group.add(phoneContact);
   phoneShadow.position.x = phone.position.x;
   phoneShadow.position.z = phone.position.z;
   phoneShadow.rotation.z = phone.rotation.y;
@@ -189,18 +395,20 @@ function pageLines() {
  * continuous strip around the perimeter (its seam hidden at the back-left corner), so no corner shows a seam.
  */
 function roundedSlab({ width, depth, height, radius, bevel, hole = null }) {
+  // `radius` is one corner radius, or [near, far]: the corners at +z, then those at -z.
   const rect = (w, d, r, path) => {
     const x = w / 2;
     const y = d / 2;
-    path.moveTo(-x + r, -y);
-    path.lineTo(x - r, -y);
-    path.absarc(x - r, -y + r, r, -Math.PI / 2, 0);
-    path.lineTo(x, y - r);
-    path.absarc(x - r, y - r, r, 0, Math.PI / 2);
-    path.lineTo(-x + r, y);
-    path.absarc(-x + r, y - r, r, Math.PI / 2, Math.PI);
-    path.lineTo(-x, -y + r);
-    path.absarc(-x + r, -y + r, r, Math.PI, Math.PI * 1.5);
+    const [near, far] = Array.isArray(r) ? r : [r, r];
+    path.moveTo(-x + near, -y);
+    path.lineTo(x - near, -y);
+    path.absarc(x - near, -y + near, near, -Math.PI / 2, 0);
+    path.lineTo(x, y - far);
+    path.absarc(x - far, y - far, far, 0, Math.PI / 2);
+    path.lineTo(-x + far, y);
+    path.absarc(-x + far, y - far, far, Math.PI / 2, Math.PI);
+    path.lineTo(-x, -y + near);
+    path.absarc(-x + near, -y + near, near, Math.PI, Math.PI * 1.5);
     return path;
   };
   const shape = rect(width, depth, radius, new THREE.Shape());
@@ -376,7 +584,9 @@ function reflectorTexture() {
  */
 function buildLamp(world, palette, dress) {
   const group = new THREE.Group();
-  const body = dress.add("lampBody", new THREE.MeshStandardMaterial({ color: color(palette.lampBody), roughness: 0.62 }));
+  // Matte enamel. It takes no environment reflection: the environment's lamp card sits at the hood itself, so
+  // the shell would mirror its own bulb (light that cannot reach the outside) and read as a glass bowl.
+  const body = dress.add("lampBody", new THREE.MeshStandardMaterial({ color: color(palette.lampBody), roughness: 0.62, envMapIntensity: 0.15 }));
   // The foot stands just behind and right of the small cup and the elbow sits low, so the upper arm crosses the frame on a
   // long diagonal up to the hood (rising toward the camera from a foot far behind, it foreshortened to a stub).
   const foot = new THREE.Vector3(4.3, 0, -1.85);
@@ -398,8 +608,10 @@ function buildLamp(world, palette, dress) {
     return mesh;
   };
 
-  // Foot: a bevelled weighted disc with a collar where the post enters.
-  const footProfile = [[0.001, 0.075], [0.3, 0.075], [0.335, 0.062], [0.352, 0.035], [0.355, 0.0], [0.001, 0.0]].map(([x, y]) => new THREE.Vector2(x, y));
+  // Foot: a bevelled weighted disc with a collar where the post enters. Lathe profiles run bottom to top, so
+  // three.js winds the faces outward (top to bottom turned the foot inside out: its open underside z-fought the
+  // contact shadow and blinked as the camera drifted).
+  const footProfile = [[0.001, 0.0], [0.355, 0.0], [0.352, 0.035], [0.335, 0.062], [0.3, 0.075], [0.001, 0.075]].map(([x, y]) => new THREE.Vector2(x, y));
   const footMesh = part(new THREE.LatheGeometry(footProfile, 48));
   footMesh.position.copy(foot);
   const collar = part(new THREE.CylinderGeometry(0.075, 0.085, 0.08, 24));
@@ -425,6 +637,9 @@ function buildLamp(world, palette, dress) {
   hood.position.copy(head);
   const aim = target.clone().sub(head).normalize();
   hood.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), aim);
+  // Traced outside-down then inside-up, so the lathe winds it inside out (see the foot). Kept that way on
+  // purpose: the camera sees the inner wall's outer faces, a clean shell, while the outward lip ring would catch
+  // a dashed grazing highlight along the rim at 1x.
   const shell = new THREE.Mesh(new THREE.LatheGeometry(profile, 64), body);
   shell.castShadow = shell.receiveShadow = true;
   hood.add(shell);
@@ -576,18 +791,31 @@ function buildCards(world, palette) {
     c.fillStyle = grey(24);
     c.fillRect(m.x(-0.1), m.y(0.47), m.sx(0.49), m.sy(0.23));
   });
-  // The foreground chair back: a soft, defocused silhouette, dark, with the room's light catching its rounded top
-  // (the texture carries the shape and that rim; the colour comes from the dressing: navy-violet in Flable).
+  // The foreground chair back: a soft, defocused silhouette, dark, with the room's light faintly catching its
+  // rounded top (the texture carries the shape and that rim; the colour comes from the dressing: navy-violet in
+  // Flable). It sits behind the headline: a bright rim read as a glowing halo there.
   const chair = placeholderTexture((c, w, h) => {
+    // A rounded backrest: a broad arch over straight sides, heavily defocused.
+    const back = (inset) => {
+      c.beginPath();
+      c.moveTo(w * (0.1 + inset), h);
+      c.lineTo(w * (0.1 + inset), h * 0.52);
+      c.bezierCurveTo(w * (0.1 + inset), h * (0.1 + inset), w * (0.9 - inset), h * (0.1 + inset), w * (0.9 - inset), h * 0.52);
+      c.lineTo(w * (0.9 - inset), h);
+    };
     c.filter = `blur(${Math.round(w * 0.04)}px)`;
     c.fillStyle = grey(40);
-    c.beginPath();
-    c.roundRect(w * 0.1, h * 0.18, w * 0.8, h, w * 0.24);
+    back(0);
+    c.closePath();
     c.fill();
-    c.strokeStyle = grey(255);
-    c.lineWidth = w * 0.03;
-    c.beginPath();
-    c.roundRect(w * 0.12, h * 0.2, w * 0.76, h, w * 0.22);
+    // The room's light along the top curve: a soft rim, kept off the straight sides.
+    c.filter = `blur(${Math.round(w * 0.018)}px)`;
+    const rim = c.createLinearGradient(0, h * 0.12, 0, h * 0.62);
+    rim.addColorStop(0, grey(110));
+    rim.addColorStop(1, grey(110, 0));
+    c.strokeStyle = rim;
+    c.lineWidth = w * 0.026;
+    back(0.02);
     c.stroke();
   }, 256, 256);
   const arc = new THREE.Mesh(
@@ -615,7 +843,7 @@ export const roomArc = { radius: 38, halfAngle: 80, bottom: -30, top: 26, rect: 
 export const cardLayout = {
   room: { depth: 62, rect: roomArc.rect },
   // Big enough to stay in the frame through the loop's zoom, overlapping the desk's front edge (reference).
-  chair: { depth: 13, rect: [-0.14, 0.5, 0.38, 1.2] },
+  chair: { depth: 13, rect: [-0.18, 0.54, 0.3, 1.22] },
 };
 
 export function buildWorld({ palette, seed = 7 }) {

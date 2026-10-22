@@ -119,22 +119,25 @@ interface Box {
   bottom: number;
 }
 
-/**
- * What sits behind one header cluster (the pills, the logo, the tools), topmost first. A declared data-header-tone
- * decides (the hero's artwork); otherwise the first image or solid background that fills the cluster's whole box,
- * so a dark card or photo behind the pills turns them dark, but a small dark chip or a line of text never flickers
- * them. Nothing found reads as dark, as the artwork does.
- */
-function toneBehind(cluster: HTMLElement, header: HTMLElement): HeaderTone {
+/** What sits behind one header cluster (the pills, the logo, the tools), topmost first, and the cluster's box. */
+function behind(cluster: HTMLElement, header: HTMLElement) {
   // The visible controls, not the grid cell they sit in (the pills' nav spans a third of the header).
   const parts = Array.from(cluster.children).map((child) => child.getBoundingClientRect());
   const left = Math.min(...parts.map((part) => part.left));
   const right = Math.max(...parts.map((part) => part.right));
   // offsetTop ignores the hide transform, so a tucked-away header keeps sampling its own line.
   const box: Box = { left, right, top: cluster.offsetTop, bottom: cluster.offsetTop + cluster.offsetHeight };
-  const stack = document.elementsFromPoint((box.left + box.right) / 2, (box.top + box.bottom) / 2);
+  const stack = document.elementsFromPoint((box.left + box.right) / 2, (box.top + box.bottom) / 2).filter((node) => !header.contains(node));
+  return { box, stack };
+}
+
+/**
+ * A declared data-header-tone decides (the hero's artwork); otherwise the first image or solid background that fills
+ * the cluster's whole box, so a dark card or photo behind the pills turns them dark, but a small dark chip or a line
+ * of text never flickers them. Nothing found reads as dark, as the artwork does.
+ */
+function toneBehind({ box, stack }: ReturnType<typeof behind>): HeaderTone {
   for (const node of stack) {
-    if (header.contains(node)) continue;
     const declared = node.getAttribute("data-header-tone");
     if (declared === "dark" || declared === "light") return declared;
     const rect = node.getBoundingClientRect();
@@ -155,8 +158,15 @@ function useHeaderTone(header: RefObject<HTMLElement | null>) {
     const sample = () => {
       frame = 0;
       clusters.forEach((cluster) => {
-        const tone = toneBehind(cluster, element);
+        const under = behind(cluster, element);
+        const tone = toneBehind(under);
         if (cluster.dataset.tone !== tone) cluster.dataset.tone = tone;
+        // The pills also learn whether a data-header-current="glass" section (the home hero) is behind them.
+        // Nothing behind means the header has no layout (hidden below Desktop), so the first guess stands.
+        if (cluster.dataset.current !== undefined && under.stack.length) {
+          const current = under.stack[0]?.closest('[data-header-current="glass"]') ? "glass" : "accent";
+          if (cluster.dataset.current !== current) cluster.dataset.current = current;
+        }
       });
     };
     const schedule = () => {
@@ -184,14 +194,17 @@ export function SiteHeader() {
   const hidden = useAutoHide(menuOpen);
   const headerRef = useRef<HTMLElement>(null);
   useHeaderTone(headerRef);
-  const current = currentView(usePathname());
+  const pathname = usePathname();
+  const current = currentView(pathname);
   const at = (view: View) => (current === view ? "page" : undefined);
   const close = () => setMenuOpen(false);
 
   return (
     <>
       <header ref={headerRef} className={`site-header${hidden ? " is-hidden" : ""}`} data-header>
-        <nav className="header-pills" aria-label="Portfolio view" data-tone-probe>
+        {/* Over the home hero the current pill stays glass like the rest; the red returns once the hero scrolls past.
+            The first paint guesses from the URL (the home page opens on the hero); scrolling corrects it. */}
+        <nav className="header-pills" aria-label="Portfolio view" data-tone-probe data-current={pathname === "/" ? "glass" : "accent"}>
           {viewLinks.map((link) => (
             <a className="lift-pill" key={link.href} href={link.href} aria-current={at(link.view)}>{link.label}</a>
           ))}
